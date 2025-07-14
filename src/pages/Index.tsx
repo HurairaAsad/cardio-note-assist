@@ -193,7 +193,22 @@ Electronically generated summary - Please review and modify as clinically approp
   const readFileContent = async (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onload = (e) => {
+        let content = e.target?.result as string;
+        
+        // If it's a PDF file, inform user that text extraction is limited
+        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+          content = "PDF content detected. Please note: For best results, consider uploading a text file (.txt) or copying the text content from your PDF into a text document.";
+        }
+        
+        // Truncate content if too long (roughly 150,000 tokens to stay under Claude's limit)
+        const maxLength = 150000;
+        if (content.length > maxLength) {
+          content = content.substring(0, maxLength) + "\n\n[Content truncated due to length - showing first portion only]";
+        }
+        
+        resolve(content);
+      };
       reader.onerror = (e) => reject(e);
       reader.readAsText(file);
     });
