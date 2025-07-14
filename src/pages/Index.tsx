@@ -27,12 +27,84 @@ const Index = () => {
     setCurrentStep(2);
   };
 
-  const handleGenerateSummary = async () => {
-    setIsGenerating(true);
-    // Simulate AI processing
-    setTimeout(() => {
-      setGeneratedSummary(`
-CARDIOLOGY PROGRESS NOTE
+  const generateCardiologyConsult = () => {
+    return `CARDIOLOGY CONSULT
+
+Patient Name: [Patient Name]
+DOB: [Date of Birth]
+Date of Service: ${new Date().toLocaleDateString()}
+Chief Complaint: [Chief Complaint]
+On consult for: Cardiac management
+Code status: [Code Status]
+
+History of Present Illness:
+[Patient] is a [age] y/o [M/F], resident of [Facility/Location], with PMHx of [relevant medical history] presenting with [current symptoms/condition].
+
+Visits:
+${new Date().toLocaleDateString()} - The patient is seen resting in their room. [Clinical observations and assessment]
+
+Review of Systems:
+General: No weight change, generally healthy, no change in strength or exercise tolerance
+Head: No headaches, no vertigo, no injury
+Eyes: Normal vision, no diplopia, no tearing, no scotomata, no pain
+Ears: No change in hearing, no tinnitus, no bleeding, no vertigo
+Nose: No epistaxis, no coryza, no obstruction, no discharge
+Mouth: No dental difficulties, no gingival bleeding, no use of dentures
+Neck: No stiffness, no pain, no tenderness, no noted masses
+Chest: No dyspnea, no wheezing, no hemoptysis, no cough
+Heart: No chest discomfort, no palpitations, no syncope, no orthopnea
+Abdomen: No change in appetite, no dysphagia, no abdominal pains, no bowel habit changes, no emesis, no melena
+GU: No urinary urgency, no dysuria, no change in nature of urine
+Musculoskeletal: No pain in muscles or joints, no limitation of range of motion, no paresthesias or numbness
+Neurologic: No weakness, no tremor, no seizures, no changes in mentation, no ataxia
+Psychiatric: No depressive symptoms, no changes in sleep habits, no changes in thought content
+
+Past Surgical History: [Previous surgeries]
+
+Family Hx: [Family medical history]
+
+Social Hx: [Social history including smoking, alcohol, etc.]
+
+Physical Exam:
+Vitals: Weight: [weight] lbs, BP [BP], Pulse [HR] bpm, RR [RR], O2 sats [O2]% on room air
+General: Alert & Oriented x3. Not in any acute distress, well appearing.
+Head: Normocephalic, atraumatic, no lesions
+Eyes: PERRLA, EOM intact, conjunctivae clear
+Ears: No drainage, no lesions. Hearing intact.
+Nose: Mucosa normal, no obstruction, no epistaxis
+Throat: Clear, no exudates, no lesions
+Neck: Supple, No lymphadenopathy. No JVD. no masses
+Chest: Lungs clear to auscultation bilaterally. no rales, no rhonchi, no wheezes
+Heart: RR, no murmurs, no rubs, no gallops
+Abdomen: Soft, Nontender, no masses, BS normal.
+Back: Normal curvature, no tenderness.
+Extremities: full range of motion. no deformities, no edema, no erythema
+Neuro: No focal deficits. Equal strength in all extremities.
+Skin: Normal, no rashes, no lesions noted
+
+Medications:
+[Current medications list]
+
+Labs & Imaging Results:
+[Laboratory and imaging findings]
+
+Assessment/Plan:
+[Clinical assessment and treatment plan]
+
+Discussed plan with collaborating physician, Dr. [Physician Name], he agrees with the plan.
+
+[Provider Name] MSN, APRN, AGNP-BC
+General Cardiology
+[Practice Name]
+[Phone Number]
+
+Total time spent: [X] minutes, > 50% time spent in counseling the patient on treatment options, medications and plan of care.
+
+Electronically generated summary - Please review and modify as clinically appropriate.`;
+  };
+
+  const generateProgressNote = () => {
+    return `CARDIOLOGY PROGRESS NOTE
 
 PATIENT: [Patient Name]
 DATE: ${new Date().toLocaleDateString()}
@@ -58,8 +130,39 @@ RECOMMENDATIONS:
 - Lifestyle modifications reinforced
 - Return to clinic in 3 months
 
-Electronically generated summary - Please review and modify as clinically appropriate.
-      `);
+Electronically generated summary - Please review and modify as clinically appropriate.`;
+  };
+
+  const handleGenerateSummary = async () => {
+    setIsGenerating(true);
+    // Simulate AI processing
+    setTimeout(() => {
+      let generatedNote = "";
+      
+      if (selectedTemplate === "Cardiology Consultation") {
+        generatedNote = generateCardiologyConsult();
+      } else if (selectedTemplate === "Cardiology Progress Note") {
+        generatedNote = generateProgressNote();
+      } else {
+        // Default template for other types
+        generatedNote = `${selectedTemplate.toUpperCase()}
+
+PATIENT: [Patient Name]
+DATE: ${new Date().toLocaleDateString()}
+MRN: [Medical Record Number]
+
+CLINICAL SUMMARY:
+Based on uploaded documentation and selected template: ${selectedTemplate}
+
+[Clinical findings and recommendations based on uploaded file: ${uploadedFile?.name}]
+
+PLAN:
+[Treatment plan and follow-up recommendations]
+
+Electronically generated summary - Please review and modify as clinically appropriate.`;
+      }
+      
+      setGeneratedSummary(generatedNote);
       setIsGenerating(false);
       setCurrentStep(3);
     }, 3000);

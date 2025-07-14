@@ -16,11 +16,18 @@ export const TemplateSelector = ({ onTemplateSelect, uploadedFile }: TemplateSel
 
   const templates = [
     {
+      id: "cardiology-consult",
+      name: "Cardiology Consultation",
+      description: "Comprehensive cardiology consultation with detailed ROS, physical exam, and visit history",
+      icon: Heart,
+      color: "text-red-600 bg-red-100"
+    },
+    {
       id: "cardiology-progress",
       name: "Cardiology Progress Note",
       description: "Structured progress note for cardiology patients with assessment and plan",
       icon: Heart,
-      color: "text-red-600 bg-red-100"
+      color: "text-red-500 bg-red-50"
     },
     {
       id: "general-progress",
