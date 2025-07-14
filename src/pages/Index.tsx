@@ -5,13 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FileUpload } from "@/components/FileUpload";
 import { TemplateSelector } from "@/components/TemplateSelector";
 import { SummaryOutput } from "@/components/SummaryOutput";
-import { ApiKeyManager } from "@/components/ApiKeyManager";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
 import { FileText, Brain, Shield, Clock } from "lucide-react";
 import { toast } from "sonner";
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 
 const Index = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -19,7 +18,8 @@ const Index = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [generatedSummary, setGeneratedSummary] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [apiKey, setApiKey] = useState<string>("");
+
+  const CLAUDE_API_KEY = "sk-ant-api03-qgRXywQQyGDxIZc_BJS9WA8_q9P4Xf9Ef-IZ5jg_lkJgffu3iSVU5QXmCOCJ2LFLWoRsIq-yq3oD0WpjmhSuw-E97tcgAA";
 
   const handleFileUpload = (file: File) => {
     setUploadedFile(file);
@@ -138,8 +138,8 @@ Electronically generated summary - Please review and modify as clinically approp
   };
 
   const handleGenerateSummary = async () => {
-    if (!uploadedFile || !selectedTemplate || !apiKey) {
-      toast.error("Please ensure you have uploaded a file, selected a template, and configured your API key");
+    if (!uploadedFile || !selectedTemplate) {
+      toast.error("Please ensure you have uploaded a file and selected a template");
       return;
     }
     
@@ -149,41 +149,38 @@ Electronically generated summary - Please review and modify as clinically approp
       // Read file content
       const fileContent = await readFileContent(uploadedFile);
       
-      // Initialize OpenAI client
-      const openai = new OpenAI({
-        apiKey: apiKey,
-        dangerouslyAllowBrowser: true // Note: This is for client-side usage
+      // Initialize Claude client
+      const anthropic = new Anthropic({
+        apiKey: CLAUDE_API_KEY,
+        dangerouslyAllowBrowser: true
       });
 
       // Create the prompt based on selected template
       const prompt = createPromptForTemplate(selectedTemplate, fileContent, uploadedFile.name);
 
-      // Call OpenAI API
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4",
+      // Call Claude API
+      const message = await anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 2000,
+        temperature: 0.3,
+        system: "You are an experienced physician assistant helping to generate clinical documentation. Create detailed, professional medical notes based on the provided information.",
         messages: [
-          {
-            role: "system",
-            content: "You are an experienced physician assistant helping to generate clinical documentation. Create detailed, professional medical notes based on the provided information."
-          },
           {
             role: "user",
             content: prompt
           }
-        ],
-        temperature: 0.3,
-        max_tokens: 2000
+        ]
       });
 
-      const generatedNote = completion.choices[0]?.message?.content || "Unable to generate note";
+      const generatedNote = message.content[0]?.type === 'text' ? message.content[0].text : "Unable to generate note";
       
       setGeneratedSummary(generatedNote);
       setCurrentStep(3);
       toast.success("Clinical note generated successfully!");
     } catch (error: any) {
-      console.error("OpenAI API Error:", error);
+      console.error("Claude API Error:", error);
       if (error?.status === 401) {
-        toast.error("Invalid API key. Please check your OpenAI API key.");
+        toast.error("Invalid API key. Please check your Claude API key.");
       } else if (error?.status === 429) {
         toast.error("API rate limit exceeded. Please try again later.");
       } else {
@@ -268,10 +265,7 @@ Use professional medical terminology and provide detailed clinical reasoning.`;
 
         {/* Step Content */}
         {currentStep === 0.5 && (
-          <div className="space-y-6">
-            <ApiKeyManager onApiKeySet={setApiKey} />
-            <FileUpload onFileUpload={handleFileUpload} />
-          </div>
+          <FileUpload onFileUpload={handleFileUpload} />
         )}
 
         {currentStep === 1 && uploadedFile && (
@@ -300,16 +294,11 @@ Use professional medical terminology and provide detailed clinical reasoning.`;
               </div>
               <Button 
                 onClick={handleGenerateSummary}
-                disabled={isGenerating || !apiKey}
+                disabled={isGenerating}
                 className="w-full bg-blue-600 hover:bg-blue-700"
               >
-                {isGenerating ? "Generating with AI..." : "Generate Clinical Note"}
+                {isGenerating ? "Generating with Claude AI..." : "Generate Clinical Note"}
               </Button>
-              {!apiKey && (
-                <p className="text-sm text-amber-600 text-center">
-                  Please configure your OpenAI API key to generate notes
-                </p>
-              )}
             </CardContent>
           </Card>
         )}
