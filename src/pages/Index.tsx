@@ -5,10 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FileUpload } from "@/components/FileUpload";
 import { TemplateSelector } from "@/components/TemplateSelector";
 import { SummaryOutput } from "@/components/SummaryOutput";
+import { ApiKeyManager } from "@/components/ApiKeyManager";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
 import { FileText, Brain, Shield, Clock } from "lucide-react";
+import { toast } from "sonner";
+import OpenAI from 'openai';
 
 const Index = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -16,6 +19,7 @@ const Index = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [generatedSummary, setGeneratedSummary] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [apiKey, setApiKey] = useState<string>("");
 
   const handleFileUpload = (file: File) => {
     setUploadedFile(file);
@@ -134,38 +138,96 @@ Electronically generated summary - Please review and modify as clinically approp
   };
 
   const handleGenerateSummary = async () => {
+    if (!uploadedFile || !selectedTemplate || !apiKey) {
+      toast.error("Please ensure you have uploaded a file, selected a template, and configured your API key");
+      return;
+    }
+    
     setIsGenerating(true);
-    // Simulate AI processing
-    setTimeout(() => {
-      let generatedNote = "";
+    
+    try {
+      // Read file content
+      const fileContent = await readFileContent(uploadedFile);
       
-      if (selectedTemplate === "Cardiology Consultation") {
-        generatedNote = generateCardiologyConsult();
-      } else if (selectedTemplate === "Cardiology Progress Note") {
-        generatedNote = generateProgressNote();
-      } else {
-        // Default template for other types
-        generatedNote = `${selectedTemplate.toUpperCase()}
+      // Initialize OpenAI client
+      const openai = new OpenAI({
+        apiKey: apiKey,
+        dangerouslyAllowBrowser: true // Note: This is for client-side usage
+      });
 
-PATIENT: [Patient Name]
-DATE: ${new Date().toLocaleDateString()}
-MRN: [Medical Record Number]
+      // Create the prompt based on selected template
+      const prompt = createPromptForTemplate(selectedTemplate, fileContent, uploadedFile.name);
 
-CLINICAL SUMMARY:
-Based on uploaded documentation and selected template: ${selectedTemplate}
+      // Call OpenAI API
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: "You are an experienced physician assistant helping to generate clinical documentation. Create detailed, professional medical notes based on the provided information."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 2000
+      });
 
-[Clinical findings and recommendations based on uploaded file: ${uploadedFile?.name}]
-
-PLAN:
-[Treatment plan and follow-up recommendations]
-
-Electronically generated summary - Please review and modify as clinically appropriate.`;
-      }
+      const generatedNote = completion.choices[0]?.message?.content || "Unable to generate note";
       
       setGeneratedSummary(generatedNote);
-      setIsGenerating(false);
       setCurrentStep(3);
-    }, 3000);
+      toast.success("Clinical note generated successfully!");
+    } catch (error: any) {
+      console.error("OpenAI API Error:", error);
+      if (error?.status === 401) {
+        toast.error("Invalid API key. Please check your OpenAI API key.");
+      } else if (error?.status === 429) {
+        toast.error("API rate limit exceeded. Please try again later.");
+      } else {
+        toast.error("Failed to generate clinical note. Please try again.");
+      }
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const readFileContent = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onerror = (e) => reject(e);
+      reader.readAsText(file);
+    });
+  };
+
+  const createPromptForTemplate = (template: string, fileContent: string, fileName: string): string => {
+    const basePrompt = `Based on the following patient document (${fileName}), please generate a ${template}:
+
+DOCUMENT CONTENT:
+${fileContent}
+
+Please create a comprehensive ${template} using the information provided. Include all relevant sections and maintain professional medical documentation standards.`;
+
+    if (template === "Cardiology Consultation") {
+      return `${basePrompt}
+
+Please structure the consultation note with the following sections:
+- Chief Complaint
+- History of Present Illness
+- Past Medical History
+- Medications
+- Review of Systems (comprehensive cardiovascular focus)
+- Physical Examination (detailed cardiovascular exam)
+- Assessment and Plan
+- Follow-up recommendations
+
+Use professional medical terminology and provide detailed clinical reasoning.`;
+    }
+
+    return basePrompt;
   };
 
   if (currentStep === 0) {
@@ -206,7 +268,10 @@ Electronically generated summary - Please review and modify as clinically approp
 
         {/* Step Content */}
         {currentStep === 0.5 && (
-          <FileUpload onFileUpload={handleFileUpload} />
+          <div className="space-y-6">
+            <ApiKeyManager onApiKeySet={setApiKey} />
+            <FileUpload onFileUpload={handleFileUpload} />
+          </div>
         )}
 
         {currentStep === 1 && uploadedFile && (
@@ -235,11 +300,16 @@ Electronically generated summary - Please review and modify as clinically approp
               </div>
               <Button 
                 onClick={handleGenerateSummary}
-                disabled={isGenerating}
+                disabled={isGenerating || !apiKey}
                 className="w-full bg-blue-600 hover:bg-blue-700"
               >
-                {isGenerating ? "Generating..." : "Generate Clinical Note"}
+                {isGenerating ? "Generating with AI..." : "Generate Clinical Note"}
               </Button>
+              {!apiKey && (
+                <p className="text-sm text-amber-600 text-center">
+                  Please configure your OpenAI API key to generate notes
+                </p>
+              )}
             </CardContent>
           </Card>
         )}
