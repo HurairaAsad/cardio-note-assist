@@ -196,11 +196,6 @@ Electronically generated summary - Please review and modify as clinically approp
       reader.onload = (e) => {
         let content = e.target?.result as string;
         
-        // If it's a PDF file, inform user that text extraction is limited
-        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-          content = "PDF content detected. Please note: For best results, consider uploading a text file (.txt) or copying the text content from your PDF into a text document.";
-        }
-        
         // Truncate content if too long (roughly 150,000 tokens to stay under Claude's limit)
         const maxLength = 150000;
         if (content.length > maxLength) {
