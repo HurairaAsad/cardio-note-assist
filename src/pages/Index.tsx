@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +18,7 @@ const Index = () => {
   const [generatedSummary, setGeneratedSummary] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const CLAUDE_API_KEY = "sk-ant-api03-qgRXywQQyGDxIZc_BJS9WA8_q9P4Xf9Ef-IZ5jg_lkJgffu3iSVU5QXmCOCJ2LFLWoRsIq-yq3oD0WpjmhSuw-E97tcgAA";
+  const CLAUDE_API_KEY = "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";
 
   const handleFileUpload = (file: File) => {
     setUploadedFile(file);
