@@ -64,6 +64,11 @@ export const FileUpload = ({ onFileUpload }: FileUploadProps) => {
     }
   };
 
+  const triggerFileInput = () => {
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+    fileInput?.click();
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -107,11 +112,14 @@ export const FileUpload = ({ onFileUpload }: FileUploadProps) => {
                 className="hidden"
                 id="file-upload"
               />
-              <label htmlFor="file-upload">
-                <Button variant="outline" className="cursor-pointer">
-                  Select File
-                </Button>
-              </label>
+              <Button 
+                variant="outline" 
+                className="cursor-pointer"
+                onClick={triggerFileInput}
+                type="button"
+              >
+                Select File
+              </Button>
             </div>
           </div>
 
