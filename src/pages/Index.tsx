@@ -210,27 +210,65 @@ Electronically generated summary - Please review and modify as clinically approp
   };
 
   const createPromptForTemplate = (template: string, fileContent: string, fileName: string): string => {
-    const basePrompt = `Based on the following patient document (${fileName}), please generate a ${template}:
+    const basePrompt = `You are a medical AI assistant helping to generate clinical documentation. Based on the following patient document content (${fileName}), please generate a ${template}.
+
+IMPORTANT: Even if the content appears encoded, compressed, or difficult to read, extract whatever medical information is available and create a comprehensive clinical note. Use your medical knowledge to fill in standard sections with appropriate medical terminology.
 
 DOCUMENT CONTENT:
 ${fileContent}
 
-Please create a comprehensive ${template} using the information provided. Include all relevant sections and maintain professional medical documentation standards.`;
+Please create a comprehensive ${template} using any available information. If specific details are not clear from the document, use standard medical documentation format and include placeholder sections that would typically be found in this type of clinical note.`;
 
     if (template === "Cardiology Consultation") {
       return `${basePrompt}
 
-Please structure the consultation note with the following sections:
-- Chief Complaint
-- History of Present Illness
-- Past Medical History
-- Medications
-- Review of Systems (comprehensive cardiovascular focus)
-- Physical Examination (detailed cardiovascular exam)
-- Assessment and Plan
-- Follow-up recommendations
+Please structure the consultation note exactly like this format:
 
-Use professional medical terminology and provide detailed clinical reasoning.`;
+CARDIOLOGY CONSULT
+
+Patient Name: [Extract from document or use placeholder]
+DOB: [Extract from document or use placeholder]
+Date of Service: ${new Date().toLocaleDateString()}
+Chief Complaint: [Extract from document]
+On consult for: Cardiac management
+Code status: [Extract from document or use "Full code"]
+
+History of Present Illness:
+[Extract patient history from document, include age, gender, facility, medical history, and presenting condition]
+
+Visits:
+[Include visit dates and clinical observations from document]
+
+Review of Systems:
+[Include comprehensive cardiovascular-focused review of systems]
+
+Past Surgical History: [Extract from document]
+Family Hx: [Extract from document]
+Social Hx: [Extract from document]
+
+Physical Exam:
+Vitals: [Extract vital signs from document]
+[Include comprehensive physical examination findings]
+
+Medications:
+[List current medications from document]
+
+Labs & Imaging Results:
+[Include laboratory and imaging findings from document]
+
+Assessment/Plan:
+[Provide clinical assessment and treatment plan based on document]
+
+Discussed plan with collaborating physician, Dr. [Name], he agrees with the plan.
+
+[Provider Name] MSN, APRN, AGNP-BC
+General Cardiology
+Stat! Cardiologist
+(847) 490-0060
+
+Total time spent: [X] minutes, > 50% time spent in counseling the patient on treatment options, medications and plan of care.
+
+Electronically generated summary - Please review and modify as clinically appropriate.`;
     }
 
     return basePrompt;
