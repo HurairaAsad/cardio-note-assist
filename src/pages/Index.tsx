@@ -160,7 +160,7 @@ Electronically generated summary - Please review and modify as clinically approp
 
       // Call Claude API
       const message = await anthropic.messages.create({
-        model: "claude-3-5-sonnet-20241022",
+        model: "claude-3-5-haiku-20241022",
         max_tokens: 2000,
         temperature: 0.3,
         system: "You are an experienced physician assistant helping to generate clinical documentation. Create detailed, professional medical notes based on the provided information.",
