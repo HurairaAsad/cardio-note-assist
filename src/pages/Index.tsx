@@ -210,14 +210,19 @@ Electronically generated summary - Please review and modify as clinically approp
   };
 
   const createPromptForTemplate = (template: string, fileContent: string, fileName: string): string => {
-    const basePrompt = `You are a medical AI assistant helping to generate clinical documentation. Based on the following patient document content (${fileName}), please generate a ${template}.
+    const basePrompt = `You are Claude, an advanced AI with maximum reasoning capabilities. You MUST extract actual medical information from the following document content, even if it appears encoded or in PDF format. DO NOT generate placeholder text - extract real patient data.
 
-IMPORTANT: Even if the content appears encoded, compressed, or difficult to read, extract whatever medical information is available and create a comprehensive clinical note. Use your medical knowledge to fill in standard sections with appropriate medical terminology.
+CRITICAL INSTRUCTIONS:
+1. Analyze the entire document content thoroughly using your full capabilities
+2. Extract all patient names, dates, medical history, medications, vital signs, and clinical findings
+3. Generate a realistic clinical note using ACTUAL DATA from the document
+4. If you cannot read certain parts, make reasonable medical inferences based on available data
+5. DO NOT use placeholders like "[Unable to determine]" - extract whatever information is present
 
-DOCUMENT CONTENT:
+DOCUMENT CONTENT TO ANALYZE:
 ${fileContent}
 
-Please create a comprehensive ${template} using any available information. If specific details are not clear from the document, use standard medical documentation format and include placeholder sections that would typically be found in this type of clinical note.`;
+Use your maximum processing power to extract meaningful medical information and generate a professional ${template} with real clinical data.`;
 
     if (template === "Cardiology Consultation") {
       return `${basePrompt}
