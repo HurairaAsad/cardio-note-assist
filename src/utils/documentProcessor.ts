@@ -7,15 +7,11 @@ export interface DocumentProcessingResult {
   success: boolean;
   text?: string;
   error?: string;
-  documentType?: 'medical_content' | 'table_of_contents' | 'unknown';
-  tableOfContents?: string[];
-  recommendation?: string;
   metadata?: {
     pageCount?: number;
     fileSize: number;
     fileName: string;
     extractionMethod: string;
-    documentStructure?: string[];
   };
 }
 
@@ -136,17 +132,14 @@ export class DocumentProcessor {
     }
     
     // Route to appropriate extraction method
-    let result: DocumentProcessingResult;
     switch (fileExtension) {
       case 'pdf':
-        result = await this.extractTextFromPDF(file);
-        break;
+        return await this.extractTextFromPDF(file);
       
       case 'txt':
       case 'md':
       case 'rtf':
-        result = await this.extractTextFromTextFile(file);
-        break;
+        return await this.extractTextFromTextFile(file);
       
       default:
         return {
@@ -159,26 +152,6 @@ export class DocumentProcessor {
           }
         };
     }
-    
-    // If extraction was successful, analyze document type
-    if (result.success && result.text) {
-      const documentAnalysis = this.analyzeDocumentType(result.text);
-      result.documentType = documentAnalysis.type;
-      
-      if (documentAnalysis.type === 'table_of_contents') {
-        result.tableOfContents = documentAnalysis.sections;
-        result.recommendation = 'Document appears to be a table of contents, but will attempt to extract any available medical information.';
-        
-        if (result.metadata) {
-          result.metadata.documentStructure = documentAnalysis.sections;
-        }
-        
-        // Still mark as successful but with a warning - let the medical extractor decide
-        console.log('TOC detected but proceeding with extraction attempt');
-      }
-    }
-    
-    return result;
   }
   
   /**
@@ -210,81 +183,6 @@ export class DocumentProcessor {
     return cleanedLines.join('\n').trim();
   }
   
-  /**
-   * Analyze document type to determine if it's table of contents or medical content
-   */
-  private analyzeDocumentType(text: string): { 
-    type: 'medical_content' | 'table_of_contents' | 'unknown'; 
-    sections?: string[];
-    confidence: number;
-  } {
-    const tocIndicators = [
-      'table of contents', 'page #', 'total # pages', 'medical record sections',
-      'profile (', 'pages)', 'medication administration record', 'page 1 of',
-      'run on:', 'page 2 of', 'page 3 of', 'printed on', 'run date'
-    ];
-    
-    const contentIndicators = [
-      'history of present illness', 'physical examination', 'assessment and plan',
-      'vital signs:', 'blood pressure:', 'patient presents', 'chief complaint',
-      'diagnosis:', 'medications:', 'patient is a', 'reviewed the', 'on examination',
-      'patient reports', 'physical exam', 'current medications', 'past medical history'
-    ];
-    
-    const textLower = text.toLowerCase();
-    
-    let tocCount = 0;
-    let contentCount = 0;
-    const foundSections: string[] = [];
-    
-    // Count table of contents indicators
-    tocIndicators.forEach(indicator => {
-      if (textLower.includes(indicator)) {
-        tocCount++;
-      }
-    });
-    
-    // Count medical content indicators
-    contentIndicators.forEach(indicator => {
-      if (textLower.includes(indicator)) {
-        contentCount++;
-      }
-    });
-    
-    // Extract potential sections for table of contents
-    if (tocCount > 0) {
-      const lines = text.split('\n');
-      lines.forEach(line => {
-        const trimmed = line.trim();
-        if (trimmed.includes('(') && trimmed.includes('pages)') || 
-            trimmed.includes('page #') || 
-            /page \d+ of \d+/i.test(trimmed)) {
-          foundSections.push(trimmed);
-        }
-      });
-    }
-    
-    console.log(`Document analysis: TOC indicators: ${tocCount}, Content indicators: ${contentCount}`);
-    
-    if (tocCount > contentCount && tocCount >= 3) {
-      return {
-        type: 'table_of_contents',
-        sections: foundSections,
-        confidence: Math.min(0.9, tocCount / 10)
-      };
-    } else if (contentCount >= 3) {
-      return {
-        type: 'medical_content',
-        confidence: Math.min(0.9, contentCount / 10)
-      };
-    } else {
-      return {
-        type: 'unknown',
-        confidence: 0.1
-      };
-    }
-  }
-
   /**
    * Validate if text appears to be medical content
    */
