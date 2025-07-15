@@ -244,15 +244,6 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-blue-900 mb-2">Processing Configuration:</h3>
-                <div className="space-y-2 text-blue-800 text-sm">
-                  <p><strong>File:</strong> {uploadedFile?.name}</p>
-                  <p><strong>Template:</strong> {selectedTemplate}</p>
-                  <p><strong>AI Model:</strong> Claude 3.5 Haiku (Specialized Medical)</p>
-                  <p><strong>Extraction Method:</strong> Multi-stage PDF text extraction with medical validation</p>
-                </div>
-              </div>
               
               <Alert>
                 <AlertCircle className="h-4 w-4" />
