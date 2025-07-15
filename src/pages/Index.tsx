@@ -226,55 +226,119 @@ ${fileContent}
 REQUIREMENT: Generate a comprehensive ${template} with realistic medical content. Use proper medical terminology, include all standard sections, and create a professional clinical note. Do NOT refuse or say the document is unreadable - work with whatever information is available and fill in with medically appropriate content.`;
 
     if (template === "Cardiology Consultation") {
-      return `${basePrompt}
+      return `You are a specialized medical information extraction system. Extract and organize the following information from the cardiology progress notes into a comprehensive structured format:
 
-Please structure the consultation note exactly like this format:
+**REQUIRED EXTRACTION SECTIONS:**
 
-CARDIOLOGY CONSULT
+1. **Patient Demographics**
+   - Full name, DOB, age, gender, MR#, admission date, location, facility
 
-Patient Name: [Extract from document or use placeholder]
-DOB: [Extract from document or use placeholder]
-Date of Service: ${new Date().toLocaleDateString()}
-Chief Complaint: [Extract from document]
-On consult for: Cardiac management
-Code status: [Extract from document or use "Full code"]
+2. **Diagnoses** 
+   - Primary cardiac diagnoses with ICD codes
+   - Secondary diagnoses with ICD codes
+   - Chronological progression of conditions
+
+3. **Medications**
+   - Current cardiac medications with exact dosages and frequencies
+   - Recent medication changes and rationale
+   - PRN medications and parameters
+
+4. **Vital Signs & Clinical Data**
+   - Most recent vital signs with dates
+   - Weight trends
+   - Orientation status
+
+5. **Clinical Course Summary**
+   - Major cardiac events (STEMI, procedures, hospitalizations)
+   - Intervention details (stents, surgeries, procedures)
+   - Current functional and cognitive status
+
+6. **Laboratory & Imaging Results**
+   - Recent lab values with dates and trends
+   - Echocardiogram findings with specific measurements
+   - Other imaging studies
+
+7. **Physical Examination**
+   - System-by-system findings from most recent exam
+   - Specific cardiac findings
+
+8. **Assessment & Plan**
+   - Each problem with current management approach
+   - Guideline-directed medical therapy status
+   - Future plans and monitoring
+
+9. **Follow-up Care**
+   - Scheduled appointments and providers
+   - Planned studies or consultations
+   - Monitoring parameters
+
+10. **Special Considerations**
+    - Communication barriers
+    - Family involvement
+    - Prognosis and special circumstances
+
+**FORMATTING REQUIREMENTS:**
+- Use clear markdown headers and subheaders
+- Include specific dates for all clinical events
+- Maintain chronological order for clinical course
+- Include exact medication dosages and frequencies
+- Specify measurement units for all values
+- Note trending changes in clinical parameters
+
+**CLINICAL CONTEXT:**
+- Focus on cardiology management for heart failure patients
+- Pay attention to medication optimization challenges
+- Note hypotension management in heart failure
+- Track EF progression and functional status
+- Document family/caregiver involvement for cognitively impaired patients
+
+**FINAL OUTPUT FORMAT:**
+Generate a comprehensive CARDIOLOGY PROGRESS NOTE following this exact structure:
+
+CARDIOLOGY PROGRESS NOTE
+Patient Name: [Extract from document]
+DOB: [Extract from document]
+Date of Service: [Extract from document]
+On consult for: [Extract reason for consultation]
+Code status: [Extract if available]
 
 History of Present Illness:
-[Extract patient history from document, include age, gender, facility, medical history, and presenting condition]
+[Comprehensive cardiac history with chronological progression]
 
 Visits:
-[Include visit dates and clinical observations from document]
+[All documented visits with dates and clinical findings]
 
 Review of Systems:
-[Include comprehensive cardiovascular-focused review of systems]
+[Complete systems review as documented]
 
-Past Surgical History: [Extract from document]
-Family Hx: [Extract from document]
-Social Hx: [Extract from document]
+Past Surgical History: 
+[All cardiac and relevant surgeries with dates]
+
+Family Hx: 
+[Relevant family cardiac history]
+
+Social Hx: 
+[Social factors affecting cardiac care]
 
 Physical Exam:
-Vitals: [Extract vital signs from document]
-[Include comprehensive physical examination findings]
+Vitals: [Most recent complete vital signs with units]
+[Complete head-to-toe examination findings]
 
 Medications:
-[List current medications from document]
+[Complete medication list with exact dosages and frequencies]
 
 Labs & Imaging Results:
-[Include laboratory and imaging findings from document]
+[All relevant lab values, trends, and imaging with dates]
 
-Assessment/Plan:
-[Provide clinical assessment and treatment plan based on document]
+Assessment/ Plan:
+[Problem-based assessment with specific management plans]
 
-Discussed plan with collaborating physician, Dr. [Name], he agrees with the plan.
+[Provider information and time documentation]
 
-[Provider Name] MSN, APRN, AGNP-BC
-General Cardiology
-Stat! Cardiologist
-(847) 490-0060
+DOCUMENT CONTENT TO ANALYZE:
+${fileContent}
 
-Total time spent: [X] minutes, > 50% time spent in counseling the patient on treatment options, medications and plan of care.
-
-Electronically generated summary - Please review and modify as clinically appropriate.`;
+Extract from this medical document and generate the structured cardiology note above:`;
     }
 
     return basePrompt;
