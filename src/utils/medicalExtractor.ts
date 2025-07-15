@@ -5,6 +5,13 @@ export interface MedicalExtractionResult {
   success: boolean;
   extractedNote?: string;
   error?: string;
+  documentType?: 'medical_content' | 'table_of_contents' | 'unknown';
+  recommendation?: string;
+  tableOfContents?: string[];
+  formatValidation?: {
+    isValid: boolean;
+    missingHeaders: string[];
+  };
   sourceMetadata?: any;
   validation?: {
     isMedical: boolean;
@@ -211,9 +218,22 @@ export class MedicalRecordExtractor {
       const processingResult = await this.documentProcessor.processFile(file);
       
       if (!processingResult.success || !processingResult.text) {
+        // Handle table of contents specifically
+        if (processingResult.documentType === 'table_of_contents') {
+          return {
+            success: false,
+            error: processingResult.error || 'Document contains table of contents only',
+            documentType: 'table_of_contents',
+            tableOfContents: processingResult.tableOfContents,
+            recommendation: processingResult.recommendation,
+            sourceMetadata: processingResult.metadata
+          };
+        }
+        
         return {
           success: false,
           error: processingResult.error || 'Failed to extract text from document',
+          documentType: processingResult.documentType,
           sourceMetadata: processingResult.metadata
         };
       }
@@ -243,8 +263,13 @@ export class MedicalRecordExtractor {
         templateType
       );
 
+      // Step 4: Validate format of extracted note
+      const formatValidation = this.validateNoteFormat(extractionResult.extractedNote || '', templateType);
+
       return {
         ...extractionResult,
+        documentType: processingResult.documentType,
+        formatValidation,
         validation: {
           isMedical: validation.isValid,
           confidence: validation.confidence,
@@ -336,5 +361,73 @@ export class MedicalRecordExtractor {
    */
   validateMedicalContent(text: string) {
     return this.documentProcessor.validateMedicalContent(text);
+  }
+
+  /**
+   * Validate the format of extracted medical note
+   */
+  private validateNoteFormat(note: string, templateType: string): { isValid: boolean; missingHeaders: string[] } {
+    const generalHeaders = [
+      'Patient Information', 'Demographics', 'Diagnoses', 'Medications', 
+      'Physical Exam', 'Assessment', 'Plan'
+    ];
+    
+    const cardiologyHeaders = [
+      'CARDIOLOGY PROGRESS NOTE', 'Patient Name:', 'History of Present Illness',
+      'Physical Examination', 'Current Medications', 'Assessment and Plan'
+    ];
+    
+    const requiredHeaders = templateType.toLowerCase().includes('cardiology') 
+      ? cardiologyHeaders 
+      : generalHeaders;
+    
+    const missingHeaders: string[] = [];
+    const noteLower = note.toLowerCase();
+    
+    requiredHeaders.forEach(header => {
+      if (!noteLower.includes(header.toLowerCase())) {
+        missingHeaders.push(header);
+      }
+    });
+    
+    return {
+      isValid: missingHeaders.length <= 2, // Allow for some variation
+      missingHeaders
+    };
+  }
+
+  /**
+   * Format enhancement for better medical note structure
+   */
+  async enhanceNoteFormat(note: string, templateType: string): Promise<string> {
+    const formatPrompt = `
+Take this medical information and reformat it EXACTLY in the proper medical note structure.
+
+**For ${templateType.toUpperCase()} template, ensure:**
+- Proper section headers with consistent formatting
+- Clear patient demographics section
+- Chronological organization of clinical information
+- Proper medical terminology and abbreviations
+- Complete medication lists with dosages
+- Structured assessment and plan
+
+**Source Medical Information:**
+${note}
+
+Please reformat this into a properly structured medical note with all required sections.`;
+
+    try {
+      const response = await this.anthropic.messages.create({
+        model: "claude-3-5-haiku-20241022",
+        max_tokens: 3000,
+        temperature: 0.0,
+        messages: [{ role: "user", content: formatPrompt }]
+      });
+
+      return response.content[0]?.type === 'text' ? response.content[0].text : note;
+    } catch (error) {
+      console.warn('Format enhancement failed:', error);
+      return note; // Return original if enhancement fails
+    }
   }
 }
