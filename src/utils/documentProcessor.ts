@@ -167,13 +167,14 @@ export class DocumentProcessor {
       
       if (documentAnalysis.type === 'table_of_contents') {
         result.tableOfContents = documentAnalysis.sections;
-        result.recommendation = 'Document appears to be a table of contents only. Please provide the actual medical content pages, specifically: Progress Notes, Care Plan, or Medical Diagnoses sections.';
-        result.success = false;
-        result.error = 'Document contains table of contents only, not medical content';
+        result.recommendation = 'Document appears to be a table of contents, but will attempt to extract any available medical information.';
         
         if (result.metadata) {
           result.metadata.documentStructure = documentAnalysis.sections;
         }
+        
+        // Still mark as successful but with a warning - let the medical extractor decide
+        console.log('TOC detected but proceeding with extraction attempt');
       }
     }
     

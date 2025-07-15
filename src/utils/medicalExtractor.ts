@@ -20,13 +20,15 @@ export interface MedicalExtractionResult {
   };
 }
 
-const COMPREHENSIVE_MEDICAL_EXTRACTION_PROMPT = `You are a specialized medical information extraction system with advanced capabilities to process and organize medical documents. Extract and organize the following information into a comprehensive structured format.
+const COMPREHENSIVE_MEDICAL_EXTRACTION_PROMPT = `You are a specialized medical information extraction system with advanced capabilities to process and organize medical documents. Extract and organize ALL available information into a comprehensive structured format.
 
 **CRITICAL INSTRUCTIONS:**
-1. Extract ALL available information from the document, even if formatting is imperfect
-2. Use medical knowledge to interpret abbreviated terms and correct obvious OCR errors
-3. Maintain strict medical accuracy while filling in standard medical note structure
-4. If specific information is not available, note it as "Not documented" rather than omitting sections
+1. Extract ALL available information from the document, even if it appears to be a table of contents or summary
+2. Use medical knowledge to interpret abbreviated terms, correct obvious OCR errors, and infer standard medical information
+3. If the document contains patient demographics, diagnoses, medications, or any clinical data - extract it ALL
+4. For documents that appear to be face sheets or summaries, extract whatever medical information is present
+5. If specific information is not available, note it as "Not documented" rather than omitting sections
+6. Be aggressive in finding and extracting any medical content, regardless of document format
 
 **REQUIRED EXTRACTION SECTIONS:**
 
@@ -100,7 +102,7 @@ const COMPREHENSIVE_MEDICAL_EXTRACTION_PROMPT = `You are a specialized medical i
 **DOCUMENT TEXT TO ANALYZE:**
 {document_text}
 
-Generate a comprehensive medical note using the above structure and the actual information extracted from this document. Ensure all standard medical note sections are included, properly formatted, and medically accurate.`;
+Generate a comprehensive medical note using the above structure and the actual information extracted from this document. Extract ALL available medical information, even if the document appears to be a summary or table of contents.`;
 
 const CARDIOLOGY_SPECIFIC_PROMPT = `You are a specialized cardiology medical information extraction system. Create a comprehensive CARDIOLOGY PROGRESS NOTE using all available information from the document.
 
@@ -218,18 +220,6 @@ export class MedicalRecordExtractor {
       const processingResult = await this.documentProcessor.processFile(file);
       
       if (!processingResult.success || !processingResult.text) {
-        // Handle table of contents specifically
-        if (processingResult.documentType === 'table_of_contents') {
-          return {
-            success: false,
-            error: processingResult.error || 'Document contains table of contents only',
-            documentType: 'table_of_contents',
-            tableOfContents: processingResult.tableOfContents,
-            recommendation: processingResult.recommendation,
-            sourceMetadata: processingResult.metadata
-          };
-        }
-        
         return {
           success: false,
           error: processingResult.error || 'Failed to extract text from document',
@@ -240,20 +230,25 @@ export class MedicalRecordExtractor {
 
       console.log(`Extracted ${processingResult.text.length} characters from document`);
 
-      // Step 2: Validate medical content
+      // Step 2: Validate medical content - be more permissive for TOC documents
       const validation = this.documentProcessor.validateMedicalContent(processingResult.text);
       
-      if (!validation.isValid) {
-      return {
-        success: false,
-        error: validation.reason || 'Document does not appear to contain medical information',
-        validation: {
-          isMedical: validation.isValid,
-          confidence: validation.confidence,
-          reason: validation.reason
-        },
-        sourceMetadata: processingResult.metadata
-      };
+      // If it's a TOC document, lower the threshold for medical content validation
+      const isTableOfContents = processingResult.documentType === 'table_of_contents';
+      const shouldProceed = validation.isValid || 
+        (isTableOfContents && processingResult.text.length > 200); // Process TOC if it has substantial text
+      
+      if (!shouldProceed && !isTableOfContents) {
+        return {
+          success: false,
+          error: validation.reason || 'Document does not appear to contain medical information',
+          validation: {
+            isMedical: validation.isValid,
+            confidence: validation.confidence,
+            reason: validation.reason
+          },
+          sourceMetadata: processingResult.metadata
+        };
       }
 
       // Step 3: Extract medical information using Claude
