@@ -21,6 +21,14 @@ const COMPREHENSIVE_MEDICAL_EXTRACTION_PROMPT = `You are a specialized medical i
 3. Maintain strict medical accuracy while filling in standard medical note structure
 4. If specific information is not available, note it as "Not documented" rather than omitting sections
 
+**AGE CALCULATION REQUIREMENTS - CRITICAL:**
+- ALWAYS calculate age accurately using this exact formula: Age = (Service Date Year - Birth Year) minus 1 if birthday hasn't occurred yet in the service year
+- Example 1: DOB 06/20/1974, Service Date 07/23/2025 → Age = 2025 - 1974 = 51 (birthday already passed in 2025)
+- Example 2: DOB 12/15/1980, Service Date 03/10/2025 → Age = 2025 - 1980 - 1 = 44 (birthday hasn't occurred yet in 2025)
+- VALIDATION: Age must be between 0-120 years. If calculated age seems unreasonable, double-check your calculation
+- FORMAT: Always display as "XX-year-old" (e.g., "51-year-old female")
+- SHOW YOUR WORK: Include the calculation in your thinking process to ensure accuracy
+
 **REQUIRED EXTRACTION SECTIONS:**
 
 ## PATIENT DEMOGRAPHICS
@@ -96,6 +104,14 @@ const COMPREHENSIVE_MEDICAL_EXTRACTION_PROMPT = `You are a specialized medical i
 Generate a comprehensive medical note using the above structure and the actual information extracted from this document. Ensure all standard medical note sections are included, properly formatted, and medically accurate.`;
 
 const CARDIOLOGY_SPECIFIC_PROMPT = `You are a specialized cardiology medical information extraction system. Create a comprehensive CARDIOLOGY PROGRESS NOTE using all available information from the document.
+
+**AGE CALCULATION REQUIREMENTS - CRITICAL:**
+- ALWAYS calculate age accurately using this exact formula: Age = (Service Date Year - Birth Year) minus 1 if birthday hasn't occurred yet in the service year
+- Example 1: DOB 06/20/1974, Service Date 07/23/2025 → Age = 2025 - 1974 = 51 (birthday already passed in 2025)
+- Example 2: DOB 12/15/1980, Service Date 03/10/2025 → Age = 2025 - 1980 - 1 = 44 (birthday hasn't occurred yet in 2025)
+- VALIDATION: Age must be between 0-120 years. If calculated age seems unreasonable, double-check your calculation
+- FORMAT: Always display as "XX-year-old" (e.g., "51-year-old female")
+- SHOW YOUR WORK: Include the calculation in your thinking process to ensure accuracy
 
 **CARDIOLOGY-SPECIFIC REQUIREMENTS:**
 
