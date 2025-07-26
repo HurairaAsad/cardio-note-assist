@@ -124,7 +124,8 @@ const Index = () => {
       // Save report to database if user is logged in
       if (user) {
         try {
-          await supabase.from('reports').insert({
+          console.log('Saving report for user:', user.id);
+          const reportData = {
             user_id: user.id,
             title: `Clinical Note - ${new Date().toLocaleDateString()}`,
             original_document_name: uploadedFile?.name,
@@ -134,7 +135,18 @@ const Index = () => {
             physical_exam: physicalExamData,
             visit_notes: visits,
             final_report: finalNote
-          });
+          };
+          
+          console.log('Report data to save:', reportData);
+          
+          const { data: insertedData, error } = await supabase
+            .from('reports')
+            .insert(reportData)
+            .select();
+          
+          console.log('Insert result:', { insertedData, error });
+          
+          if (error) throw error;
           
           toast({
             title: "Report saved successfully",
@@ -148,6 +160,8 @@ const Index = () => {
             variant: "destructive",
           });
         }
+      } else {
+        console.log('No user logged in, skipping report save');
       }
       
       toast({

@@ -36,11 +36,14 @@ export default function Dashboard() {
 
   const fetchReports = async () => {
     try {
+      console.log('Fetching reports for user:', user?.id);
       const { data, error } = await supabase
         .from('reports')
         .select('id, title, template_type, created_at, original_document_name')
+        .eq('user_id', user?.id) // Add user filter for RLS
         .order('created_at', { ascending: false });
       
+      console.log('Reports query result:', { data, error });
       if (error) throw error;
       setReports(data || []);
     } catch (error) {
