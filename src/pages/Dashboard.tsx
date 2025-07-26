@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { FileText, Plus, LogOut, User, Calendar, Clock } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format, subDays, eachDayOfInterval } from 'date-fns';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
 interface Report {
   id: string;
@@ -55,6 +56,46 @@ export default function Dashboard() {
 
   const handleViewReport = (reportId: string) => {
     navigate(`/report/${reportId}`);
+  };
+
+  // Helper functions for charts
+  const getActivityData = () => {
+    const last7Days = eachDayOfInterval({
+      start: subDays(new Date(), 6),
+      end: new Date()
+    });
+
+    return last7Days.map(day => {
+      const dayReports = reports.filter(report => 
+        format(new Date(report.created_at), 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd')
+      );
+      return {
+        date: format(day, 'MMM dd'),
+        reports: dayReports.length
+      };
+    });
+  };
+
+  const getTemplateData = () => {
+    const templateCounts: Record<string, number> = {};
+    reports.forEach(report => {
+      const template = report.template_type || 'Unknown';
+      templateCounts[template] = (templateCounts[template] || 0) + 1;
+    });
+
+    return Object.entries(templateCounts).map(([name, value]) => ({ name, value }));
+  };
+
+  const getTemplateColor = (index: number) => {
+    const colors = [
+      'hsl(var(--primary))',
+      'hsl(var(--secondary))', 
+      'hsl(var(--accent))',
+      'hsl(var(--muted))',
+      '#8b5cf6',
+      '#06d6a0'
+    ];
+    return colors[index % colors.length];
   };
 
   if (authLoading || loading) {
@@ -139,6 +180,79 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Analytics Charts */}
+        {reports.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Activity Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Activity Over Time</CardTitle>
+                <CardDescription>Reports generated in the last 7 days</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={getActivityData()}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip />
+                      <Line 
+                        type="monotone" 
+                        dataKey="reports" 
+                        stroke="hsl(var(--primary))" 
+                        strokeWidth={2}
+                        dot={{ fill: "hsl(var(--primary))", strokeWidth: 2 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Template Distribution */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Report Types</CardTitle>
+                <CardDescription>Distribution by template type</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={getTemplateData()}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {getTemplateData().map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={getTemplateColor(index)} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  {getTemplateData().map((entry, index) => (
+                    <div key={entry.name} className="flex items-center gap-2 text-sm">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: getTemplateColor(index) }}
+                      />
+                      <span className="truncate">{entry.name}: {entry.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex justify-between items-center mb-6">
