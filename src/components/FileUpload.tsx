@@ -73,23 +73,23 @@ export const FileUpload = ({ onFileUpload, forceOCR = false, onForceOCRChange }:
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
+    <div className="space-y-6 animate-fade-in">
+      <Card className="glass-effect soft-shadow rounded-2xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="w-5 h-5" />
+          <CardTitle className="flex items-center gap-2 text-foreground">
+            <Upload className="w-5 h-5 text-primary" />
             Upload Patient Document
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-muted-foreground">
             Upload a patient report, encounter note, or clinical document (PDF, DOCX, or TXT)
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+            className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 ease-out ${
               dragActive 
-                ? 'border-blue-500 bg-blue-50' 
-                : 'border-gray-300 hover:border-gray-400'
+                ? 'border-primary bg-primary/5 scale-[1.02] soft-shadow' 
+                : 'border-border hover:border-primary/50 hover:bg-accent/20'
             }`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -97,14 +97,14 @@ export const FileUpload = ({ onFileUpload, forceOCR = false, onForceOCRChange }:
             onDrop={handleDrop}
           >
             <div className="space-y-4">
-              <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                <FileText className="w-8 h-8 text-gray-600" />
+              <div className="mx-auto w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center transition-all duration-300 hover:scale-110">
+                <FileText className="w-8 h-8 text-primary" />
               </div>
               <div>
-                <p className="text-lg font-medium text-gray-900">
+                <p className="text-lg font-medium text-foreground">
                   Drop your file here, or click to browse
                 </p>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Supports PDF, DOCX, and TXT files up to 50MB
                 </p>
               </div>
@@ -118,7 +118,7 @@ export const FileUpload = ({ onFileUpload, forceOCR = false, onForceOCRChange }:
               <div className="flex gap-2">
                 <Button 
                   variant="outline" 
-                  className="cursor-pointer"
+                  className="cursor-pointer soft-hover rounded-xl"
                   onClick={triggerFileInput}
                   type="button"
                 >
@@ -129,7 +129,7 @@ export const FileUpload = ({ onFileUpload, forceOCR = false, onForceOCRChange }:
                     variant={forceOCR ? "default" : "outline"}
                     size="sm"
                     onClick={() => onForceOCRChange(!forceOCR)}
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1 soft-hover rounded-xl transition-all duration-300"
                   >
                     <Zap className="w-3 h-3" />
                     Force OCR
@@ -140,25 +140,25 @@ export const FileUpload = ({ onFileUpload, forceOCR = false, onForceOCRChange }:
           </div>
 
           {selectedFile && (
-            <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="mt-6 p-4 bg-accent/10 rounded-2xl border border-accent/20 animate-scale-in soft-shadow">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <FileText className="w-5 h-5 text-green-600" />
+                  <FileText className="w-5 h-5 text-primary" />
                   <div>
-                    <p className="font-medium text-green-900">{selectedFile.name}</p>
-                    <p className="text-sm text-green-700">
+                    <p className="font-medium text-foreground">{selectedFile.name}</p>
+                    <p className="text-sm text-muted-foreground">
                       {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {forceOCR && (
-                    <Badge variant="secondary" className="flex items-center gap-1">
+                    <Badge variant="secondary" className="flex items-center gap-1 rounded-xl">
                       <Zap className="w-3 h-3" />
                       OCR Mode
                     </Badge>
                   )}
-                  <Button onClick={handleContinue} className="bg-blue-600 hover:bg-blue-700">
+                  <Button onClick={handleContinue} className="soft-hover rounded-xl">
                     Continue
                   </Button>
                 </div>
@@ -168,11 +168,11 @@ export const FileUpload = ({ onFileUpload, forceOCR = false, onForceOCRChange }:
         </CardContent>
       </Card>
 
-      <Card className="border-amber-200 bg-amber-50">
+      <Card className="border-accent/30 bg-accent/5 glass-effect rounded-2xl animate-slide-up" style={{animationDelay: '0.3s'}}>
         <CardContent className="pt-6">
           <div className="flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
-            <div className="text-sm text-amber-800">
+            <AlertCircle className="w-5 h-5 text-accent-foreground mt-0.5" />
+            <div className="text-sm text-accent-foreground">
               <p className="font-medium mb-1">HIPAA Compliance Notice</p>
               <p>
                 This tool processes patient information securely. Files are temporarily processed and not permanently stored. 

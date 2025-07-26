@@ -67,7 +67,7 @@ export const ProcessingStatus = ({
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full glass-effect soft-shadow rounded-2xl animate-scale-in">
       <CardContent className="pt-6">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -83,7 +83,7 @@ export const ProcessingStatus = ({
           </div>
 
           <div className="space-y-2">
-            <Progress value={animatedProgress} className="h-2" />
+            <Progress value={animatedProgress} className="h-3 rounded-full" />
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{Math.round(animatedProgress)}% complete</span>
               {extractionMethod && (
@@ -99,7 +99,7 @@ export const ProcessingStatus = ({
               <div className="text-xs text-muted-foreground">
                 OCR Progress: {Math.round(ocrProgress)}%
               </div>
-              <Progress value={ocrProgress} className="h-1" />
+              <Progress value={ocrProgress} className="h-2 rounded-full" />
             </div>
           )}
 
