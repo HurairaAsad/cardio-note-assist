@@ -113,94 +113,90 @@ const CARDIOLOGY_SPECIFIC_PROMPT = `You are a specialized cardiology medical inf
 - FORMAT: Always display as "XX-year-old" (e.g., "51-year-old female")
 - SHOW YOUR WORK: Include the calculation in your thinking process to ensure accuracy
 
-**CARDIOLOGY-SPECIFIC REQUIREMENTS:**
+**REQUIRED OUTPUT FORMAT - FOLLOW EXACTLY:**
 
-1. **Cardiac History Focus**
-   - Previous MI, CABG, PCI with dates and details
-   - Heart failure history and classification (NYHA, ACC/AHA stages)
-   - Arrhythmia history and interventions
-   - Valvular disease and interventions
-
-2. **Cardiac Medications Analysis**
-   - ACE inhibitors/ARBs with current doses and target doses
-   - Beta-blockers with heart rate control assessment
-   - Diuretics with volume status monitoring
-   - Anticoagulation with INR targets if applicable
-
-3. **Cardiac Function Assessment**
-   - Ejection fraction trends and measurement dates
-   - Wall motion abnormalities
-   - Valve function (stenosis/regurgitation severity)
-   - Pulmonary pressures if available
-
-4. **Cardiovascular Risk Factors**
-   - Diabetes management and HbA1c targets
-   - Hypertension control and BP targets
-   - Lipid management and statin therapy
-   - Smoking cessation efforts
-
-**OUTPUT FORMAT:**
-CARDIOLOGY PROGRESS NOTE
-
+**Header:**
 Patient Name: [Extract full name]
-DOB: [Extract date of birth] 
-Date of Service: [Extract service date]
-MR#: [Extract if available]
-Location: [Extract facility/unit]
-On consult for: [Extract reason or "Cardiac management"]
-Code status: [Extract if documented]
+DOB: [Extract MM/DD/YYYY]
+Date of Service: [Extract MM/DD/YYYY]
+On consult for: Cardiac Management
+Code status: [Extract or indicate "Full code"]
 
-History of Present Illness:
+**History of Present Illness:**
 [Comprehensive cardiac history with timeline of events, current symptoms, and functional status]
 
-Previous Visits/Clinical Course:
-[Chronological listing of all documented visits with dates and key findings]
+**Visits:**
+(DOS - Date of Service): *Enable NP to input free text every single encounter*
 
-Review of Systems:
-[Cardiovascular-focused ROS with specific attention to chest pain, dyspnea, palpitations, syncope, edema]
+**Review of Systems:**
+General: (Y/N) weight change, (Y/N) generally healthy, (Y/N) change in strength or exercise tolerance
+Head: (Y/N) headaches, (Y/N) vertigo, (Y/N) injury
+Eyes: (Y/N) Normal vision, (Y/N) diplopia, (Y/N) tearing, (Y/N) scotomata, (Y/N) pain
+Ears: (Y/N) change in hearing, (Y/N) tinnitus, (Y/N) bleeding, (Y/N) vertigo
+Nose: (Y/N) epistaxis, (Y/N) coryza, (Y/N) obstruction, (Y/N) discharge
+Mouth: (Y/N) dental difficulties, (Y/N) gingival bleeding, (Y/N) use of dentures
+Neck: (Y/N) stiffness, (Y/N) pain, (Y/N) tenderness, (Y/N) noted masses
+Chest: (Y/N) dyspnea, (Y/N) wheezing, (Y/N) hemoptysis, (Y/N) cough
+Heart: (Y/N) chest discomfort, (Y/N) palpitations, (Y/N) syncope, (Y/N) orthopnea
+Abdomen: (Y/N) change in appetite, (Y/N) dysphagia, (Y/N) abdominal pains, (Y/N) bowel habit changes, (Y/N) emesis, (Y/N) melena
+GU: (Y/N) urinary urgency, (Y/N) dysuria, (Y/N) change in nature of urine
+Musculoskeletal: (Y/N) pain in muscles or joints, (Y/N) limitation of range of motion, (Y/N) paresthesias or numbness
+Neurologic: (Y/N) weakness, (Y/N) tremor, (Y/N) seizures, (Y/N) changes in mentation, (Y/N) ataxia
+Psychiatric: (Y/N) depressive symptoms, (Y/N) changes in sleep habits, (Y/N) changes in thought content
 
-Past Medical History:
-[Cardiac and relevant non-cardiac conditions with dates]
+**Past Surgical History:**
+[List all prior surgeries with dates, especially cardiac procedures]
 
-Past Surgical/Procedural History:
-[All cardiac procedures, surgeries, and interventions with dates and details]
+**Family History:**
+[Cardiac disease in family members, hereditary conditions]
 
-Family History:
-[Relevant cardiac family history]
+**Social History:**
+[Smoking, alcohol, drug use, exercise tolerance, occupation]
 
-Social History:
-[Risk factors including smoking, alcohol, exercise tolerance]
+**Physical Exam:**
+Vitals: Weight: ___lbs, BP __/__, Pulse ___bpm, ___RR, ___O2 sats
+General: (Y/N) Alert & Oriented x3, (Y/N) Not in any acute distress, (Y/N) well appearing
+Head: (Y/N) Normocephalic, (Y/N) atraumatic, (Y/N) no lesions
+Eyes: (Y/N) PERRLA, (Y/N) EOM intact, (Y/N) conjunctivae clear
+Ears: (Y/N) drainage, (Y/N) lesions, (Y/N) Hearing intact
+Nose: (Y/N) Mucosa normal, (Y/N) obstruction, (Y/N) epistaxis
+Throat: (Y/N) Clear, (Y/N) exudates, (Y/N) lesions
+Neck: (Y/N) Supple, (Y/N) lymphadenopathy, (Y/N) JVD, (Y/N) masses
+Chest: (Y/N) Lungs clear to auscultation bilaterally, (Y/N) rales, (Y/N) rhonchi, (Y/N) wheezes
+Heart: (Y/N) RR, (Y/N) murmurs, (Y/N) rubs, (Y/N) gallops
+Abdomen: (Y/N) Soft, (Y/N) Nontender, (Y/N) masses, (Y/N) BS normal
+Back: (Y/N) Normal curvature, (Y/N) tenderness
+Extremities: (Y/N) full range of motion, (Y/N) deformities, (Y/N) edema, (Y/N) erythema
+Neuro: (Y/N) focal deficits, (Y/N) Equal strength in all extremities
+Skin: (Y/N) Normal, (Y/N) rashes, (Y/N) lesions noted
 
-Physical Examination:
-Vitals: [Include BP, HR, weight with trends, O2 saturation]
-General: [Overall appearance and functional status]
-Cardiovascular: [Detailed cardiac exam including heart sounds, murmurs, JVD, peripheral edema]
-Pulmonary: [Lung sounds, breathing pattern]
-Extremities: [Edema assessment, pulse examination]
-[Other relevant systems]
+**Medications (Cardiac):**
+[Name, Dose, Frequency for each medication]
 
-Current Medications:
-[Complete cardiac medication list with doses and frequencies, noting optimization opportunities]
+**Labs & Imaging Results:**
+[Include EXACT dates and reference values in parentheses. Example: "7/18/25 BUN 43 (ref: 7-20), Creat 0.9 (ref: 0.6-1.2), Na 142 (ref: 136-145), K 3.8 (ref: 3.5-5.0)"]
 
-Laboratory/Diagnostic Results:
-[Recent cardiac biomarkers, BNP/NT-proBNP, lipid panel, HbA1c, renal function]
-[ECG findings with interpretation]
-[Echocardiogram results with specific measurements]
-[Other cardiac imaging results]
+**Assessment:**
+[Numbered list of diagnoses with supporting evidence and clinical reasoning]
 
-Assessment and Plan:
-[Problem-based approach for each cardiac condition with specific management plans]
+**Plan:**
+[Specific management plans, medication adjustments, follow-up recommendations]
 
-Provider Information:
-[Extract provider details and practice information]
+**Signoff:**
+[Provider name and credentials, supervising physician if applicable, time spent]
 
-Time Documentation:
-[Extract time spent if documented]
+**CRITICAL INSTRUCTIONS:**
+- Fill in Y or N for each Review of Systems and Physical Exam item based on document findings
+- If information is not documented, use "N" for negative findings and note "Not documented" for unclear items
+- Include EXACT dates for all lab results with reference values in parentheses
+- Use the numbered assessment format with detailed explanations
+- Maintain professional medical terminology throughout
+- Calculate age precisely and show your work
 
 **DOCUMENT TEXT:**
 {document_text}
 
-Extract all available information and create a comprehensive cardiology progress note following the above format.`;
+Extract all available information and create a comprehensive cardiology progress note following the above EXACT format.`;
 
 export class MedicalRecordExtractor {
   private anthropic: Anthropic;
