@@ -428,4 +428,112 @@ Please generate the final clinical note now:`;
     }
     return COMPREHENSIVE_MEDICAL_EXTRACTION_PROMPT.replace('{document_text}', '');
   }
+
+  async generateFinalNoteWithAllData(
+    extractedData: string, 
+    template: string, 
+    rosData: any, 
+    physicalExamData: any, 
+    visitsData: any
+  ): Promise<string> {
+    try {
+      // Format all collected data
+      const formattedROS = this.formatReviewOfSystems(rosData);
+      const formattedPhysicalExam = this.formatPhysicalExam(physicalExamData);
+      const formattedVisits = this.formatVisits(visitsData);
+      
+      const finalPrompt = `${this.getTemplatePrompt(template)}
+
+EXTRACTED MEDICAL DATA:
+${extractedData}
+
+REVIEW OF SYSTEMS ASSESSMENT:
+${formattedROS}
+
+PHYSICAL EXAMINATION:
+${formattedPhysicalExam}
+
+VISITS DOCUMENTATION:
+${formattedVisits}
+
+INSTRUCTIONS:
+1. Use the extracted medical data as the primary source
+2. Integrate the Review of Systems assessment into the appropriate section
+3. Include the Physical Examination findings with vitals and Y/N indicators
+4. Add the Visits documentation in the appropriate section
+5. Format according to the template requirements with proper headings
+6. Include dates and reference values for all lab results
+7. Ensure Y/N indicators are clearly shown for all ROS and Physical Exam items
+8. Generate a professional, comprehensive clinical note
+
+Please generate the final clinical note now:`;
+
+      const response = await this.anthropic.messages.create({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 4000,
+        messages: [{
+          role: 'user',
+          content: finalPrompt
+        }]
+      });
+
+      return response.content[0].type === 'text' ? response.content[0].text : '';
+    } catch (error) {
+      console.error('Final note generation error:', error);
+      throw new Error(`Failed to generate final note: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  private formatPhysicalExam(examData: any): string {
+    if (!examData) return '';
+
+    let formatted = "Physical Exam:\n";
+    
+    // Vitals
+    if (examData.vitals) {
+      formatted += `Vitals: Weight: ${examData.vitals.weight || '___'}lbs, BP ${examData.vitals.bp || '___/___'}, Pulse ${examData.vitals.pulse || '___'}bpm, ${examData.vitals.rr || '___'}RR, ${examData.vitals.o2sats || '___'}O2 sats\n`;
+    }
+
+    // Physical exam sections
+    const sections = [
+      { key: 'general', title: 'General' },
+      { key: 'head', title: 'Head' },
+      { key: 'eyes', title: 'Eyes' },
+      { key: 'ears', title: 'Ears' },
+      { key: 'nose', title: 'Nose' },
+      { key: 'throat', title: 'Throat' },
+      { key: 'neck', title: 'Neck' },
+      { key: 'chest', title: 'Chest' },
+      { key: 'heart', title: 'Heart' },
+      { key: 'abdomen', title: 'Abdomen' },
+      { key: 'back', title: 'Back' },
+      { key: 'extremities', title: 'Extremities' },
+      { key: 'neuro', title: 'Neuro' },
+      { key: 'skin', title: 'Skin' }
+    ];
+
+    sections.forEach(section => {
+      if (examData[section.key] && typeof examData[section.key] === 'object') {
+        formatted += `${section.title}: `;
+        const items = Object.entries(examData[section.key])
+          .map(([item, value]) => `(${value ? 'Y' : 'N'}) ${item}`)
+          .join(', ');
+        formatted += items + '\n';
+      }
+    });
+
+    return formatted;
+  }
+
+  private formatVisits(visitsData: any): string {
+    if (!visitsData || !visitsData.visits) return '';
+
+    let formatted = "Visits:\n";
+    
+    visitsData.visits.forEach((visit: any, index: number) => {
+      formatted += `(DOS - ${visit.date}): ${visit.note}\n`;
+    });
+
+    return formatted;
+  }
 }

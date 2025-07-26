@@ -76,7 +76,7 @@ const systemsConfig = {
     items: ["change in appetite", "dysphagia", "abdominal pains", "bowel habit changes", "emesis", "melena"]
   },
   gu: {
-    title: "Genitourinary",
+    title: "GU",
     items: ["urinary urgency", "dysuria", "change in nature of urine"]
   },
   musculoskeletal: {

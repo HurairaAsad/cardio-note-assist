@@ -5,6 +5,8 @@ import { FileUpload } from "@/components/FileUpload";
 import { TemplateSelector } from "@/components/TemplateSelector";
 import { SummaryOutput } from "@/components/SummaryOutput";
 import { ReviewOfSystems } from "@/components/ReviewOfSystems";
+import { PhysicalExam } from "@/components/PhysicalExam";
+import { Visits } from "@/components/Visits";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
@@ -23,6 +25,8 @@ const Index = () => {
   const [processingDetails, setProcessingDetails] = useState<any>(null);
   const [extractedData, setExtractedData] = useState<string>("");
   const [reviewOfSystemsData, setReviewOfSystemsData] = useState<any>(null);
+  const [physicalExamData, setPhysicalExamData] = useState<any>(null);
+  const [visitsData, setVisitsData] = useState<any>(null);
 
   const CLAUDE_API_KEY = "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";
 
@@ -55,18 +59,36 @@ const Index = () => {
     setCurrentStep(2);
   };
 
-  const handleReviewOfSystemsComplete = async (rosData: any) => {
+  const handleReviewOfSystemsComplete = (rosData: any) => {
     setReviewOfSystemsData(rosData);
+    setCurrentStep(4);
+    toast.success("Review of Systems complete!");
+  };
+
+  const handlePhysicalExamComplete = (examData: any) => {
+    setPhysicalExamData(examData);
+    setCurrentStep(5);
+    toast.success("Physical Exam complete!");
+  };
+
+  const handleVisitsComplete = async (visits: any) => {
+    setVisitsData(visits);
     setIsGenerating(true);
     
     try {
       const extractor = new MedicalRecordExtractor(CLAUDE_API_KEY);
       
-      // Generate final note with ROS data
-      const finalNote = await extractor.generateFinalNoteWithROS(extractedData, selectedTemplate, rosData);
+      // Generate final note with all collected data
+      const finalNote = await extractor.generateFinalNoteWithAllData(
+        extractedData, 
+        selectedTemplate, 
+        reviewOfSystemsData,
+        physicalExamData,
+        visits
+      );
       
       setGeneratedSummary(finalNote);
-      setCurrentStep(4);
+      setCurrentStep(6);
       
       toast.success("Clinical note generated successfully!");
       
@@ -163,9 +185,17 @@ const Index = () => {
             <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
               3
             </div>
-            <div className={`h-1 w-12 ${currentStep >= 4 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+            <div className={`h-1 w-8 ${currentStep >= 4 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
             <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 4 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
               4
+            </div>
+            <div className={`h-1 w-8 ${currentStep >= 5 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 5 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
+              5
+            </div>
+            <div className={`h-1 w-8 ${currentStep >= 6 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 6 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
+              6
             </div>
           </div>
         </div>
@@ -324,6 +354,21 @@ const Index = () => {
         )}
 
         {currentStep === 4 && (
+          <PhysicalExam 
+            onComplete={handlePhysicalExamComplete}
+            onBack={() => setCurrentStep(3)}
+            extractedVitals={processingDetails?.metadata?.vitals}
+          />
+        )}
+
+        {currentStep === 5 && (
+          <Visits 
+            onComplete={handleVisitsComplete}
+            onBack={() => setCurrentStep(4)}
+          />
+        )}
+
+        {currentStep === 6 && (
           <div className="space-y-6">
             <SummaryOutput 
               summary={generatedSummary}
@@ -334,6 +379,8 @@ const Index = () => {
                 setGeneratedSummary("");
                 setExtractedData("");
                 setReviewOfSystemsData(null);
+                setPhysicalExamData(null);
+                setVisitsData(null);
                 setFileValidation(null);
                 setProcessingDetails(null);
               }}
