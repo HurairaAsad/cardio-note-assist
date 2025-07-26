@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FileUpload } from "@/components/FileUpload";
 import { TemplateSelector } from "@/components/TemplateSelector";
 import { SummaryOutput } from "@/components/SummaryOutput";
+import { ReviewOfSystems } from "@/components/ReviewOfSystems";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
@@ -20,6 +21,8 @@ const Index = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [fileValidation, setFileValidation] = useState<any>(null);
   const [processingDetails, setProcessingDetails] = useState<any>(null);
+  const [extractedData, setExtractedData] = useState<string>("");
+  const [reviewOfSystemsData, setReviewOfSystemsData] = useState<any>(null);
 
   const CLAUDE_API_KEY = "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";
 
@@ -52,6 +55,29 @@ const Index = () => {
     setCurrentStep(2);
   };
 
+  const handleReviewOfSystemsComplete = async (rosData: any) => {
+    setReviewOfSystemsData(rosData);
+    setIsGenerating(true);
+    
+    try {
+      const extractor = new MedicalRecordExtractor(CLAUDE_API_KEY);
+      
+      // Generate final note with ROS data
+      const finalNote = await extractor.generateFinalNoteWithROS(extractedData, selectedTemplate, rosData);
+      
+      setGeneratedSummary(finalNote);
+      setCurrentStep(4);
+      
+      toast.success("Clinical note generated successfully!");
+      
+    } catch (error: any) {
+      console.error("Final note generation error:", error);
+      toast.error("Failed to generate final clinical note. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleGenerateSummary = async () => {
     if (!uploadedFile || !selectedTemplate) {
       toast.error("Please ensure you have uploaded a file and selected a template");
@@ -82,7 +108,7 @@ const Index = () => {
         return;
       }
       
-      setGeneratedSummary(result.extractedNote || "");
+      setExtractedData(result.extractedNote || "");
       setProcessingDetails({
         success: true,
         validation: result.validation,
@@ -90,7 +116,7 @@ const Index = () => {
       });
       setCurrentStep(3);
       
-      toast.success("Medical note generated successfully!");
+      toast.success("Analysis complete! Please review systems.");
       
     } catch (error: any) {
       console.error("Medical extraction error:", error);
@@ -125,17 +151,21 @@ const Index = () => {
 
         {/* Progress Steps */}
         <div className="flex items-center justify-center mb-8">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
             <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
               1
             </div>
-            <div className={`h-1 w-16 ${currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+            <div className={`h-1 w-12 ${currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
             <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
               2
             </div>
-            <div className={`h-1 w-16 ${currentStep >= 3 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+            <div className={`h-1 w-12 ${currentStep >= 3 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
             <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
               3
+            </div>
+            <div className={`h-1 w-12 ${currentStep >= 4 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 4 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
+              4
             </div>
           </div>
         </div>
@@ -287,6 +317,13 @@ const Index = () => {
         )}
 
         {currentStep === 3 && (
+          <ReviewOfSystems 
+            onComplete={handleReviewOfSystemsComplete}
+            onBack={() => setCurrentStep(2)}
+          />
+        )}
+
+        {currentStep === 4 && (
           <div className="space-y-6">
             <SummaryOutput 
               summary={generatedSummary}
@@ -295,6 +332,8 @@ const Index = () => {
                 setUploadedFile(null);
                 setSelectedTemplate("");
                 setGeneratedSummary("");
+                setExtractedData("");
+                setReviewOfSystemsData(null);
                 setFileValidation(null);
                 setProcessingDetails(null);
               }}

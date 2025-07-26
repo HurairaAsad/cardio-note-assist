@@ -349,4 +349,83 @@ export class MedicalRecordExtractor {
   validateMedicalContent(text: string) {
     return this.documentProcessor.validateMedicalContent(text);
   }
+
+  async generateFinalNoteWithROS(extractedData: string, template: string, rosData: any): Promise<string> {
+    try {
+      // Format ROS data into readable text
+      const formattedROS = this.formatReviewOfSystems(rosData);
+      
+      const finalPrompt = `${this.getTemplatePrompt(template)}
+
+EXTRACTED MEDICAL DATA:
+${extractedData}
+
+REVIEW OF SYSTEMS ASSESSMENT:
+${formattedROS}
+
+INSTRUCTIONS:
+1. Use the extracted medical data as the primary source
+2. Integrate the Review of Systems assessment into the appropriate section
+3. Format according to the template requirements with proper headings
+4. Include dates and reference values for all lab results
+5. Ensure Y/N indicators are clearly shown for all ROS items
+6. Generate a professional, comprehensive clinical note
+
+Please generate the final clinical note now:`;
+
+      const response = await this.anthropic.messages.create({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 4000,
+        messages: [{
+          role: 'user',
+          content: finalPrompt
+        }]
+      });
+
+      return response.content[0].type === 'text' ? response.content[0].text : '';
+    } catch (error) {
+      console.error('Final note generation error:', error);
+      throw new Error(`Failed to generate final note: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  private formatReviewOfSystems(rosData: any): string {
+    const sections = [
+      { key: 'general', title: 'General' },
+      { key: 'head', title: 'Head' },
+      { key: 'eyes', title: 'Eyes' },
+      { key: 'ears', title: 'Ears' },
+      { key: 'nose', title: 'Nose' },
+      { key: 'mouth', title: 'Mouth' },
+      { key: 'neck', title: 'Neck' },
+      { key: 'chest', title: 'Chest' },
+      { key: 'heart', title: 'Heart' },
+      { key: 'abdomen', title: 'Abdomen' },
+      { key: 'gu', title: 'GU' },
+      { key: 'musculoskeletal', title: 'Musculoskeletal' },
+      { key: 'neurologic', title: 'Neurologic' },
+      { key: 'psychiatric', title: 'Psychiatric' }
+    ];
+
+    let formatted = "Review of Systems:\n";
+    
+    sections.forEach(section => {
+      if (rosData[section.key]) {
+        formatted += `${section.title}: `;
+        const items = Object.entries(rosData[section.key])
+          .map(([item, value]) => `(${value ? 'Y' : 'N'}) ${item}`)
+          .join(', ');
+        formatted += items + '\n';
+      }
+    });
+
+    return formatted;
+  }
+
+  private getTemplatePrompt(template: string): string {
+    if (template.toLowerCase().includes('cardiology')) {
+      return CARDIOLOGY_SPECIFIC_PROMPT.replace('{document_text}', '');
+    }
+    return COMPREHENSIVE_MEDICAL_EXTRACTION_PROMPT.replace('{document_text}', '');
+  }
 }
