@@ -59,38 +59,45 @@ const Index = () => {
     setCurrentStep(2);
   };
 
+  const handleProceedToAssessments = () => {
+    setExtractedData(generatedSummary); // Store the analysis for later combination
+    setCurrentStep(4);
+    toast.success("Proceeding to current assessments");
+  };
+
   const handleReviewOfSystemsComplete = (rosData: any) => {
     setReviewOfSystemsData(rosData);
-    setCurrentStep(4);
+    setCurrentStep(5);
     toast.success("Review of Systems complete!");
   };
 
   const handlePhysicalExamComplete = (examData: any) => {
     setPhysicalExamData(examData);
-    setCurrentStep(5);
+    setCurrentStep(6);
     toast.success("Physical Exam complete!");
   };
 
   const handleVisitsComplete = async (visits: any) => {
     setVisitsData(visits);
+    setCurrentStep(7);
     setIsGenerating(true);
     
     try {
       const extractor = new MedicalRecordExtractor(CLAUDE_API_KEY);
       
-      // Generate final note with all collected data
+      // Generate final note combining analysis with current assessments
       const finalNote = await extractor.generateFinalNoteWithAllData(
-        extractedData, 
+        extractedData, // This is the original analysis
         selectedTemplate, 
         reviewOfSystemsData,
         physicalExamData,
         visits
       );
       
+      // Replace the summary with the combined final note
       setGeneratedSummary(finalNote);
-      setCurrentStep(6);
       
-      toast.success("Clinical note generated successfully!");
+      toast.success("Final clinical note generated successfully!");
       
     } catch (error: any) {
       console.error("Final note generation error:", error);
@@ -130,7 +137,7 @@ const Index = () => {
         return;
       }
       
-      setExtractedData(result.extractedNote || "");
+      setGeneratedSummary(result.extractedNote || "");
       setProcessingDetails({
         success: true,
         validation: result.validation,
@@ -138,7 +145,7 @@ const Index = () => {
       });
       setCurrentStep(3);
       
-      toast.success("Analysis complete! Please review systems.");
+      toast.success("Analysis complete! Review the generated report, then proceed to current assessments.");
       
     } catch (error: any) {
       console.error("Medical extraction error:", error);
@@ -177,11 +184,11 @@ const Index = () => {
             <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
               1
             </div>
-            <div className={`h-1 w-12 ${currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+            <div className={`h-1 w-8 ${currentStep >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
             <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
               2
             </div>
-            <div className={`h-1 w-12 ${currentStep >= 3 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+            <div className={`h-1 w-8 ${currentStep >= 3 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
             <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
               3
             </div>
@@ -196,6 +203,10 @@ const Index = () => {
             <div className={`h-1 w-8 ${currentStep >= 6 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
             <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 6 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
               6
+            </div>
+            <div className={`h-1 w-8 ${currentStep >= 7 ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep >= 7 ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
+              7
             </div>
           </div>
         </div>
@@ -347,28 +358,6 @@ const Index = () => {
         )}
 
         {currentStep === 3 && (
-          <ReviewOfSystems 
-            onComplete={handleReviewOfSystemsComplete}
-            onBack={() => setCurrentStep(2)}
-          />
-        )}
-
-        {currentStep === 4 && (
-          <PhysicalExam 
-            onComplete={handlePhysicalExamComplete}
-            onBack={() => setCurrentStep(3)}
-            extractedVitals={processingDetails?.metadata?.vitals}
-          />
-        )}
-
-        {currentStep === 5 && (
-          <Visits 
-            onComplete={handleVisitsComplete}
-            onBack={() => setCurrentStep(4)}
-          />
-        )}
-
-        {currentStep === 6 && (
           <div className="space-y-6">
             <SummaryOutput 
               summary={generatedSummary}
@@ -384,6 +373,8 @@ const Index = () => {
                 setFileValidation(null);
                 setProcessingDetails(null);
               }}
+              showProceedButton={true}
+              onProceed={handleProceedToAssessments}
             />
             
             {/* Processing success details */}
@@ -392,8 +383,11 @@ const Index = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-green-700">
                     <CheckCircle className="w-5 h-5" />
-                    Processing Summary
+                    Analysis Summary - Historical Data Synthesized
                   </CardTitle>
+                  <CardDescription>
+                    The analysis above synthesizes historical medical data. Next, record current Y/N assessments.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -421,6 +415,64 @@ const Index = () => {
                 </CardContent>
               </Card>
             )}
+          </div>
+        )}
+
+        {currentStep === 4 && (
+          <ReviewOfSystems 
+            onComplete={handleReviewOfSystemsComplete}
+            onBack={() => setCurrentStep(3)}
+          />
+        )}
+
+        {currentStep === 5 && (
+          <PhysicalExam 
+            onComplete={handlePhysicalExamComplete}
+            onBack={() => setCurrentStep(4)}
+            extractedVitals={processingDetails?.metadata?.vitals}
+          />
+        )}
+
+        {currentStep === 6 && (
+          <Visits 
+            onComplete={handleVisitsComplete}
+            onBack={() => setCurrentStep(5)}
+          />
+        )}
+
+        {currentStep === 7 && (
+          <div className="space-y-6">
+            <SummaryOutput 
+              summary={generatedSummary}
+              onStartOver={() => {
+                setCurrentStep(0);
+                setUploadedFile(null);
+                setSelectedTemplate("");
+                setGeneratedSummary("");
+                setExtractedData("");
+                setReviewOfSystemsData(null);
+                setPhysicalExamData(null);
+                setVisitsData(null);
+                setFileValidation(null);
+                setProcessingDetails(null);
+              }}
+            />
+            
+            {/* Final note completion notice */}
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="pt-6">
+                <div className="text-sm text-green-800">
+                  <p className="font-medium mb-2">✓ Final Clinical Note Generated</p>
+                  <p>This note combines:</p>
+                  <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
+                    <li>Historical data analysis from uploaded documents</li>
+                    <li>Current Review of Systems assessments (Y/N)</li>
+                    <li>Current Physical Examination findings (Y/N)</li>
+                    <li>Current visit documentation</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>

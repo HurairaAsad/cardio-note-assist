@@ -9,9 +9,11 @@ import { toast } from "sonner";
 interface SummaryOutputProps {
   summary: string;
   onStartOver: () => void;
+  showProceedButton?: boolean;
+  onProceed?: () => void;
 }
 
-export const SummaryOutput = ({ summary, onStartOver }: SummaryOutputProps) => {
+export const SummaryOutput = ({ summary, onStartOver, showProceedButton = false, onProceed }: SummaryOutputProps) => {
   const [editedSummary, setEditedSummary] = useState(summary);
 
   const handleCopy = async () => {
@@ -42,10 +44,13 @@ export const SummaryOutput = ({ summary, onStartOver }: SummaryOutputProps) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5" />
-            Generated Clinical Note
+            {showProceedButton ? "Analysis Report - Historical Data" : "Final Clinical Note"}
           </CardTitle>
           <CardDescription>
-            Review and edit the AI-generated clinical note. Make any necessary adjustments before using.
+            {showProceedButton 
+              ? "Review the analysis of historical medical data. Next, you'll record current Y/N assessments." 
+              : "Review and edit the final clinical note. Make any necessary adjustments before using."
+            }
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -67,10 +72,17 @@ export const SummaryOutput = ({ summary, onStartOver }: SummaryOutputProps) => {
               Download as TXT
             </Button>
             
-            <Button onClick={onStartOver} variant="outline" className="flex items-center gap-2">
-              <RefreshCw className="w-4 h-4" />
-              Start Over
-            </Button>
+            {showProceedButton && onProceed ? (
+              <Button onClick={onProceed} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
+                <FileText className="w-4 h-4" />
+                Proceed to Current Assessments
+              </Button>
+            ) : (
+              <Button onClick={onStartOver} variant="outline" className="flex items-center gap-2">
+                <RefreshCw className="w-4 h-4" />
+                Start Over
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
