@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileUpload } from "@/components/FileUpload";
@@ -11,7 +14,6 @@ import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
 import { FileText, Brain, Shield, Clock, AlertCircle, CheckCircle, FileSearch, Settings } from "lucide-react";
-import { toast } from "sonner";
 import { MedicalRecordExtractor } from "@/utils/medicalExtractor";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -27,6 +29,8 @@ const Index = () => {
   const [reviewOfSystemsData, setReviewOfSystemsData] = useState<any>(null);
   const [physicalExamData, setPhysicalExamData] = useState<any>(null);
   const [visitsData, setVisitsData] = useState<any>(null);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   const CLAUDE_API_KEY = "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";
 
@@ -42,15 +46,26 @@ const Index = () => {
       setFileValidation(diagnostics);
       
       if (!diagnostics.supportedType || !diagnostics.sizeValid) {
-        toast.error("File validation failed. Please check the requirements.");
+        toast({
+          title: "File validation failed",
+          description: "Please check the requirements.",
+          variant: "destructive",
+        });
         return;
       }
       
-      toast.success("File validated successfully!");
+      toast({
+        title: "File validated successfully",
+        description: "File is ready for processing.",
+      });
       setCurrentStep(1);
     } catch (error) {
       console.error("File validation error:", error);
-      toast.error("Failed to validate file. Please try again.");
+      toast({
+        title: "Validation failed",
+        description: "Failed to validate file. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -62,19 +77,28 @@ const Index = () => {
   const handleProceedToAssessments = () => {
     setExtractedData(generatedSummary); // Store the analysis for later combination
     setCurrentStep(4);
-    toast.success("Proceeding to current assessments");
+    toast({
+      title: "Proceeding to assessments",
+      description: "Now record current patient assessments.",
+    });
   };
 
   const handleReviewOfSystemsComplete = (rosData: any) => {
     setReviewOfSystemsData(rosData);
     setCurrentStep(5);
-    toast.success("Review of Systems complete!");
+    toast({
+      title: "Review of Systems complete",
+      description: "Moving to Physical Exam.",
+    });
   };
 
   const handlePhysicalExamComplete = (examData: any) => {
     setPhysicalExamData(examData);
     setCurrentStep(6);
-    toast.success("Physical Exam complete!");
+    toast({
+      title: "Physical Exam complete",
+      description: "Moving to Visit notes.",
+    });
   };
 
   const handleVisitsComplete = async (visits: any) => {
@@ -97,11 +121,47 @@ const Index = () => {
       // Replace the summary with the combined final note
       setGeneratedSummary(finalNote);
       
-      toast.success("Final clinical note generated successfully!");
+      // Save report to database if user is logged in
+      if (user) {
+        try {
+          await supabase.from('reports').insert({
+            user_id: user.id,
+            title: `Clinical Note - ${new Date().toLocaleDateString()}`,
+            original_document_name: uploadedFile?.name,
+            template_type: selectedTemplate,
+            initial_analysis: extractedData,
+            review_of_systems: reviewOfSystemsData,
+            physical_exam: physicalExamData,
+            visit_notes: visits,
+            final_report: finalNote
+          });
+          
+          toast({
+            title: "Report saved successfully",
+            description: "Your clinical note has been saved to your dashboard.",
+          });
+        } catch (error) {
+          console.error('Error saving report:', error);
+          toast({
+            title: "Failed to save report",
+            description: "The report was generated but could not be saved.",
+            variant: "destructive",
+          });
+        }
+      }
+      
+      toast({
+        title: "Final clinical note generated",
+        description: "Your comprehensive note is ready.",
+      });
       
     } catch (error: any) {
       console.error("Final note generation error:", error);
-      toast.error("Failed to generate final clinical note. Please try again.");
+      toast({
+        title: "Generation failed",
+        description: "Failed to generate final clinical note. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -109,7 +169,11 @@ const Index = () => {
 
   const handleGenerateSummary = async () => {
     if (!uploadedFile || !selectedTemplate) {
-      toast.error("Please ensure you have uploaded a file and selected a template");
+      toast({
+        title: "Missing requirements",
+        description: "Please ensure you have uploaded a file and selected a template.",
+        variant: "destructive",
+      });
       return;
     }
     
@@ -119,16 +183,15 @@ const Index = () => {
     try {
       const extractor = new MedicalRecordExtractor(CLAUDE_API_KEY);
       
-      // Show processing status
-      toast.loading("Processing document...", { id: "processing" });
-      
       // Extract medical information using the comprehensive pipeline
       const result = await extractor.extractMedicalInfo(uploadedFile, selectedTemplate);
       
-      toast.dismiss("processing");
-      
       if (!result.success) {
-        toast.error(result.error || "Failed to extract medical information");
+        toast({
+          title: "Extraction failed",
+          description: result.error || "Failed to extract medical information.",
+          variant: "destructive",
+        });
         setProcessingDetails({
           error: result.error,
           validation: result.validation,
@@ -145,11 +208,18 @@ const Index = () => {
       });
       setCurrentStep(3);
       
-      toast.success("Analysis complete! Review the generated report, then proceed to current assessments.");
+      toast({
+        title: "Analysis complete",
+        description: "Review the generated report, then proceed to current assessments.",
+      });
       
     } catch (error: any) {
       console.error("Medical extraction error:", error);
-      toast.error("Failed to generate clinical note. Please try again.");
+      toast({
+        title: "Generation failed",
+        description: "Failed to generate clinical note. Please try again.",
+        variant: "destructive",
+      });
       setProcessingDetails({
         error: error.message || "Unknown error occurred",
         metadata: { fileName: uploadedFile.name, fileSize: uploadedFile.size }
@@ -161,7 +231,7 @@ const Index = () => {
 
   if (currentStep === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
         <Header />
         <Hero onGetStarted={() => setCurrentStep(0.5)} />
         <Features />
@@ -170,7 +240,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
       <Header />
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-8">
