@@ -13,6 +13,7 @@ import { Visits } from "@/components/Visits";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
+import { ProcessingStatus } from "@/components/ProcessingStatus";
 import { FileText, Brain, Shield, Clock, AlertCircle, CheckCircle, FileSearch, Settings } from "lucide-react";
 import { MedicalRecordExtractor } from "@/utils/medicalExtractor";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -29,6 +30,11 @@ const Index = () => {
   const [reviewOfSystemsData, setReviewOfSystemsData] = useState<any>(null);
   const [physicalExamData, setPhysicalExamData] = useState<any>(null);
   const [visitsData, setVisitsData] = useState<any>(null);
+  const [forceOCR, setForceOCR] = useState(false);
+  const [processingStage, setProcessingStage] = useState<string>('');
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const [extractionMethod, setExtractionMethod] = useState<string>('');
+  const [documentType, setDocumentType] = useState<string>('');
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -206,12 +212,30 @@ const Index = () => {
     
     setIsGenerating(true);
     setProcessingDetails(null);
+    setProcessingStage('reading');
+    setProcessingProgress(0);
     
     try {
       const extractor = new MedicalRecordExtractor(CLAUDE_API_KEY);
       
+      // Update progress stages
+      setProcessingStage('reading');
+      setProcessingProgress(20);
+      
       // Extract medical information using the comprehensive pipeline
       const result = await extractor.extractMedicalInfo(uploadedFile, selectedTemplate);
+      
+      setProcessingStage('ai-analysis');
+      setProcessingProgress(60);
+      
+      // Set extraction method and document type from metadata
+      if (result.sourceMetadata) {
+        setExtractionMethod(result.sourceMetadata.extractionMethod || 'Unknown');
+        if (result.sourceMetadata.extractionMethod?.includes('OCR')) {
+          setProcessingStage('ocr');
+          setProcessingProgress(40);
+        }
+      }
       
       if (!result.success) {
         toast({
@@ -226,6 +250,9 @@ const Index = () => {
         });
         return;
       }
+      
+      setProcessingStage('complete');
+      setProcessingProgress(100);
       
       setGeneratedSummary(result.extractedNote || "");
       setProcessingDetails({
@@ -253,6 +280,8 @@ const Index = () => {
       });
     } finally {
       setIsGenerating(false);
+      setProcessingStage('');
+      setProcessingProgress(0);
     }
   };
 
@@ -311,7 +340,20 @@ const Index = () => {
         {/* Step Content */}
         {currentStep === 0.5 && (
           <div className="space-y-6">
-            <FileUpload onFileUpload={handleFileUpload} />
+            <FileUpload 
+              onFileUpload={handleFileUpload}
+              forceOCR={forceOCR}
+              onForceOCRChange={setForceOCR}
+            />
+            
+            {/* Processing Status */}
+            <ProcessingStatus 
+              isProcessing={isGenerating}
+              processingStage={processingStage}
+              progress={processingProgress}
+              extractionMethod={extractionMethod}
+              documentType={documentType}
+            />
             
             {/* Enhanced file requirements */}
             <Card>

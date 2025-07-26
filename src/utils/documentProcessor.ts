@@ -109,7 +109,7 @@ export class DocumentProcessor {
           console.log(`OCR processing page ${pageNum}/${pageCount}...`);
           
           const page = await pdf.getPage(pageNum);
-          const viewport = page.getViewport({ scale: 2.0 });
+          const viewport = page.getViewport({ scale: 3.0 }); // Increased for better OCR accuracy
           
           // Create canvas for rendering
           const canvas = document.createElement('canvas');
@@ -117,11 +117,18 @@ export class DocumentProcessor {
           canvas.width = viewport.width;
           canvas.height = viewport.height;
           
+          // Enhance image quality for better OCR
+          context.imageSmoothingEnabled = true;
+          context.imageSmoothingQuality = 'high';
+          
           // Render PDF page to canvas
           await page.render({ canvasContext: context, viewport }).promise;
           
-          // OCR the canvas image
-          const { data: { text } } = await Tesseract.recognize(canvas, 'eng', {
+          // Apply image preprocessing for better OCR
+          this.preprocessCanvasForOCR(context, canvas);
+          
+          // OCR the canvas image with enhanced settings
+          const { data: { text, confidence } } = await Tesseract.recognize(canvas, 'eng', {
             logger: m => {
               if (m.status === 'recognizing text') {
                 console.log(`Page ${pageNum}: ${Math.round(m.progress * 100)}% OCR complete`);
@@ -129,11 +136,13 @@ export class DocumentProcessor {
             }
           });
           
+          console.log(`Page ${pageNum} OCR confidence: ${confidence}%`);
+          
           if (text.trim()) {
-            fullText += `--- Page ${pageNum} (OCR) ---\n${text}\n\n`;
+            fullText += `--- Page ${pageNum} (OCR - ${confidence}% confidence) ---\n${text}\n\n`;
           }
           
-          console.log(`Page ${pageNum} OCR complete: ${text.length} characters extracted`);
+          console.log(`Page ${pageNum} OCR complete: ${text.length} characters extracted with ${confidence}% confidence`);
         } catch (pageError) {
           console.warn(`Error processing page ${pageNum} with OCR:`, pageError);
           continue;
@@ -491,5 +500,67 @@ export class DocumentProcessor {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Preprocess canvas image for better OCR accuracy
+   */
+  private preprocessCanvasForOCR(context: CanvasRenderingContext2D, canvas: HTMLCanvasElement): void {
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    
+    // Apply contrast enhancement and noise reduction
+    for (let i = 0; i < data.length; i += 4) {
+      // Convert to grayscale and enhance contrast
+      const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      const enhanced = gray < 128 ? Math.max(0, gray - 30) : Math.min(255, gray + 30);
+      
+      data[i] = enhanced;     // Red
+      data[i + 1] = enhanced; // Green
+      data[i + 2] = enhanced; // Blue
+      // Alpha remains unchanged
+    }
+    
+    context.putImageData(imageData, 0, 0);
+  }
+
+  /**
+   * Detect document type from content
+   */
+  detectDocumentType(text: string): string {
+    const textLower = text.toLowerCase();
+    
+    const documentTypes = {
+      'discharge-summary': ['discharge', 'summary', 'disposition', 'final diagnosis'],
+      'progress-note': ['progress', 'note', 'daily note', 'nursing note', 'soap'],
+      'lab-results': ['laboratory', 'lab results', 'lab values', 'reference range'],
+      'imaging-report': ['radiology', 'x-ray', 'ct scan', 'mri', 'ultrasound', 'imaging'],
+      'consultation': ['consult', 'consultation', 'referral', 'opinion'],
+      'operative-report': ['operative', 'surgery', 'procedure', 'operation'],
+      'cardiology': ['cardiac', 'cardiology', 'echo', 'ekg', 'stress test', 'catheterization'],
+      'pathology': ['pathology', 'biopsy', 'histology', 'cytology'],
+      'emergency': ['emergency', 'er', 'triage', 'urgent'],
+      'medication-list': ['medication', 'prescriptions', 'drug list', 'pharmacy']
+    };
+    
+    let bestMatch = 'general';
+    let maxScore = 0;
+    
+    Object.entries(documentTypes).forEach(([type, keywords]) => {
+      let score = 0;
+      keywords.forEach(keyword => {
+        if (textLower.includes(keyword)) {
+          score += keyword.split(' ').length; // Longer phrases get higher score
+        }
+      });
+      
+      if (score > maxScore) {
+        maxScore = score;
+        bestMatch = type;
+      }
+    });
+    
+    console.log(`Detected document type: ${bestMatch} (score: ${maxScore})`);
+    return bestMatch;
   }
 }

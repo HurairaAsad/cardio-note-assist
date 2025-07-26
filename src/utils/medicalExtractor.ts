@@ -287,10 +287,10 @@ export class MedicalRecordExtractor {
         : COMPREHENSIVE_MEDICAL_EXTRACTION_PROMPT.replace('{document_text}', documentText);
 
       const response = await this.anthropic.messages.create({
-        model: "claude-3-5-haiku-20241022",
-        max_tokens: 4000,
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 8000,
         temperature: 0.1,
-        system: "You are an experienced physician and medical information specialist. Create comprehensive, accurate medical documentation based on provided source material. Maintain medical accuracy while organizing information clearly.",
+        system: "You are an experienced physician and medical information specialist with advanced medical reasoning capabilities. Create comprehensive, accurate medical documentation based on provided source material. Use superior clinical knowledge to interpret complex medical data, correct OCR errors, and fill knowledge gaps. Maintain strict medical accuracy while organizing information clearly and professionally.",
         messages: [
           {
             role: "user",
@@ -374,8 +374,10 @@ INSTRUCTIONS:
 Please generate the final clinical note now:`;
 
       const response = await this.anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 4000,
+        model: 'claude-opus-4-20250514',
+        max_tokens: 8000,
+        temperature: 0.1,
+        system: "You are an expert physician with superior clinical reasoning and documentation skills. Generate comprehensive, professional medical notes by intelligently combining extracted data with clinical assessments. Ensure perfect medical accuracy, proper formatting, and clinical coherence.",
         messages: [{
           role: 'user',
           content: finalPrompt
@@ -469,8 +471,10 @@ INSTRUCTIONS:
 Please generate the final clinical note now:`;
 
       const response = await this.anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 4000,
+        model: 'claude-opus-4-20250514',
+        max_tokens: 8000,
+        temperature: 0.1,
+        system: "You are an expert physician with superior clinical reasoning and documentation skills. Generate comprehensive, professional medical notes by intelligently combining extracted data with clinical assessments. Ensure perfect medical accuracy, proper formatting, and clinical coherence.",
         messages: [{
           role: 'user',
           content: finalPrompt

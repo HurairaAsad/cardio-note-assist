@@ -2,14 +2,17 @@
 import { useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Upload, FileText, AlertCircle, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 interface FileUploadProps {
   onFileUpload: (file: File) => void;
+  forceOCR?: boolean;
+  onForceOCRChange?: (force: boolean) => void;
 }
 
-export const FileUpload = ({ onFileUpload }: FileUploadProps) => {
+export const FileUpload = ({ onFileUpload, forceOCR = false, onForceOCRChange }: FileUploadProps) => {
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
@@ -112,14 +115,27 @@ export const FileUpload = ({ onFileUpload }: FileUploadProps) => {
                 className="hidden"
                 id="file-upload"
               />
-              <Button 
-                variant="outline" 
-                className="cursor-pointer"
-                onClick={triggerFileInput}
-                type="button"
-              >
-                Select File
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  className="cursor-pointer"
+                  onClick={triggerFileInput}
+                  type="button"
+                >
+                  Select File
+                </Button>
+                {onForceOCRChange && (
+                  <Button
+                    variant={forceOCR ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => onForceOCRChange(!forceOCR)}
+                    className="flex items-center gap-1"
+                  >
+                    <Zap className="w-3 h-3" />
+                    Force OCR
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -135,9 +151,17 @@ export const FileUpload = ({ onFileUpload }: FileUploadProps) => {
                     </p>
                   </div>
                 </div>
-                <Button onClick={handleContinue} className="bg-blue-600 hover:bg-blue-700">
-                  Continue
-                </Button>
+                <div className="flex items-center gap-2">
+                  {forceOCR && (
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                      <Zap className="w-3 h-3" />
+                      OCR Mode
+                    </Badge>
+                  )}
+                  <Button onClick={handleContinue} className="bg-blue-600 hover:bg-blue-700">
+                    Continue
+                  </Button>
+                </div>
               </div>
             </div>
           )}
