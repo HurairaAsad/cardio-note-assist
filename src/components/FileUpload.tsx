@@ -42,8 +42,8 @@ export const FileUpload = ({ onFileUpload }: FileUploadProps) => {
       return;
     }
     
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit
-      toast.error("File size must be less than 10MB");
+    if (file.size > 50 * 1024 * 1024) { // 50MB limit
+      toast.error("File size must be less than 50MB");
       return;
     }
     
@@ -102,7 +102,7 @@ export const FileUpload = ({ onFileUpload }: FileUploadProps) => {
                   Drop your file here, or click to browse
                 </p>
                 <p className="text-sm text-gray-600 mt-1">
-                  Supports PDF, DOCX, and TXT files up to 10MB
+                  Supports PDF, DOCX, and TXT files up to 50MB
                 </p>
               </div>
               <input
