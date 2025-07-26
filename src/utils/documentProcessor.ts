@@ -191,7 +191,8 @@ export class DocumentProcessor {
       'patient', 'diagnosis', 'medication', 'treatment', 'doctor', 'physician', 
       'nurse', 'hospital', 'clinic', 'medical', 'health', 'symptoms', 'condition',
       'therapy', 'procedure', 'examination', 'lab', 'test', 'vital signs',
-      'blood pressure', 'heart rate', 'temperature', 'allergies', 'history'
+      'blood pressure', 'heart rate', 'temperature', 'allergies', 'history',
+      'mr#', 'mrn', 'dob', 'admit', 'discharge', 'consult', 'progress', 'note'
     ];
     
     const cardiacKeywords = [
@@ -204,30 +205,54 @@ export class DocumentProcessor {
     
     let medicalScore = 0;
     let cardiacScore = 0;
+    let foundKeywords: string[] = [];
     
     // Count medical keywords
     medicalKeywords.forEach(keyword => {
       const matches = (textLower.match(new RegExp(keyword, 'g')) || []).length;
-      medicalScore += matches;
+      if (matches > 0) {
+        foundKeywords.push(keyword);
+        medicalScore += matches;
+      }
     });
     
     // Count cardiac-specific keywords
     cardiacKeywords.forEach(keyword => {
       const matches = (textLower.match(new RegExp(keyword, 'g')) || []).length;
-      cardiacScore += matches * 2; // Weight cardiac keywords higher
+      if (matches > 0) {
+        foundKeywords.push(keyword);
+        cardiacScore += matches * 2; // Weight cardiac keywords higher
+      }
     });
     
     const totalScore = medicalScore + cardiacScore;
     const textLength = text.length;
     
+    // Debug logging
+    console.log('Medical validation debug:', {
+      textLength,
+      totalScore,
+      medicalScore,
+      cardiacScore,
+      foundKeywords,
+      textPreview: text.substring(0, 200) + '...'
+    });
+    
     // Calculate confidence based on keyword density
     const density = totalScore / (textLength / 1000); // Keywords per 1000 characters
     
-    if (totalScore < 3) {
+    // Relaxed validation - now requires at least 1 medical keyword OR document mentions common medical formats
+    const hasBasicMedicalIndicators = 
+      totalScore >= 1 || 
+      /\b(name:|dob:|date of birth|patient|medical record|mr#|mrn)\b/i.test(text) ||
+      /\b(hospital|clinic|physician|doctor|nurse)\b/i.test(text) ||
+      /\b\d{2}\/\d{2}\/\d{4}\b/.test(text); // Date patterns common in medical records
+    
+    if (!hasBasicMedicalIndicators) {
       return {
         isValid: false,
         confidence: 0,
-        reason: 'Document does not appear to contain medical information'
+        reason: `Document does not appear to contain medical information. Found keywords: ${foundKeywords.join(', ') || 'none'}`
       };
     }
     
@@ -239,7 +264,7 @@ export class DocumentProcessor {
       };
     }
     
-    if (medicalScore >= 5) {
+    if (medicalScore >= 3) {
       return {
         isValid: true,
         confidence: Math.min(0.8, 0.4 + (medicalScore / 30)),
@@ -250,7 +275,7 @@ export class DocumentProcessor {
     return {
       isValid: true,
       confidence: Math.min(0.6, 0.2 + (totalScore / 50)),
-      reason: 'Document contains some medical terminology'
+      reason: 'Document contains medical terminology or formatting'
     };
   }
   
