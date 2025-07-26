@@ -125,6 +125,8 @@ const Index = () => {
       if (user) {
         try {
           console.log('Saving report for user:', user.id);
+          console.log('User object:', user);
+          
           const reportData = {
             user_id: user.id,
             title: `Clinical Note - ${new Date().toLocaleDateString()}`,
@@ -133,7 +135,7 @@ const Index = () => {
             initial_analysis: extractedData,
             review_of_systems: reviewOfSystemsData,
             physical_exam: physicalExamData,
-            visit_notes: visits,
+            visit_notes: visitsData, // Fixed: was using 'visits' instead of 'visitsData'
             final_report: finalNote
           };
           
@@ -146,22 +148,33 @@ const Index = () => {
           
           console.log('Insert result:', { insertedData, error });
           
-          if (error) throw error;
+          if (error) {
+            console.error('Database insert error:', error);
+            throw error;
+          }
           
+          // Refresh dashboard data if user navigates there
           toast({
             title: "Report saved successfully",
             description: "Your clinical note has been saved to your dashboard.",
           });
+          
+          console.log('Report saved successfully with ID:', insertedData?.[0]?.id);
         } catch (error) {
           console.error('Error saving report:', error);
           toast({
             title: "Failed to save report",
-            description: "The report was generated but could not be saved.",
+            description: `The report was generated but could not be saved. Error: ${error.message}`,
             variant: "destructive",
           });
         }
       } else {
         console.log('No user logged in, skipping report save');
+        toast({
+          title: "Sign in required",
+          description: "Please sign in to save your reports to the dashboard.",
+          variant: "destructive",
+        });
       }
       
       toast({
