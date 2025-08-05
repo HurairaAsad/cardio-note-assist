@@ -10,6 +10,7 @@ import { DashboardSidebar } from '@/components/DashboardSidebar';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { MetricCards } from '@/components/MetricCards';
 import { BillingSummaryWidget } from '@/components/BillingSummaryWidget';
+import { ReportsDataTable } from '@/components/ReportsDataTable';
 import { FileText, Plus, Calendar } from 'lucide-react';
 import { formatDistanceToNow, format, subDays, eachDayOfInterval } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
@@ -228,72 +229,37 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Recent Reports Section */}
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle className="text-xl">Recent Reports</CardTitle>
-                    <CardDescription>Your latest clinical note reports</CardDescription>
-                  </div>
-                  <Button onClick={handleNewReport} className="gap-2">
-                    <Plus className="w-4 h-4" />
-                    New Report
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {reports.length === 0 ? (
-                  <div className="text-center py-12">
-                    <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No reports yet</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Start by creating your first clinical note report
-                    </p>
-                    <Button onClick={handleNewReport}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create First Report
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {reports.slice(0, 5).map((report) => (
-                      <div 
-                        key={report.id} 
-                        className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer" 
-                        onClick={() => handleViewReport(report.id)}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                            <FileText className="w-5 h-5 text-primary" />
-                          </div>
-                          <div>
-                            <h4 className="font-medium">{report.title}</h4>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <span>{formatDistanceToNow(new Date(report.created_at), { addSuffix: true })}</span>
-                              {report.original_document_name && (
-                                <>
-                                  <span>•</span>
-                                  <span>{report.original_document_name}</span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <Badge variant="secondary">{report.template_type}</Badge>
-                      </div>
-                    ))}
-                    {reports.length > 5 && (
-                      <div className="text-center pt-4">
-                        <Button variant="outline" onClick={() => navigate('/reports')}>
-                          View All Reports ({reports.length})
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* Enhanced Reports Management */}
+            <ReportsDataTable 
+              reports={reports.map(report => ({
+                ...report,
+                status: 'success' as const,
+                processing_time: Math.random() * 5 + 1,
+                file_size: Math.floor(Math.random() * 500 + 100) * 1024,
+                is_favorited: Math.random() > 0.7,
+                is_archived: false,
+                tags: Math.random() > 0.5 ? ['urgent', 'follow-up'].slice(0, Math.floor(Math.random() * 2) + 1) : [],
+                content_preview: `Clinical summary for ${report.title.toLowerCase()}...`
+              }))}
+              onViewReport={handleViewReport}
+              onDeleteReports={(reportIds) => {
+                console.log('Deleting reports:', reportIds);
+                // Implement actual delete functionality
+              }}
+              onExportReports={(reportIds, format) => {
+                console.log('Exporting reports:', reportIds, 'as', format);
+                // Implement actual export functionality
+              }}
+              onToggleFavorite={(reportId) => {
+                console.log('Toggling favorite for report:', reportId);
+                // Implement actual favorite toggle functionality
+              }}
+              onArchiveReports={(reportIds) => {
+                console.log('Archiving reports:', reportIds);
+                // Implement actual archive functionality
+              }}
+              isLoading={loading}
+            />
           </main>
         </div>
       </div>
