@@ -28,8 +28,7 @@ export const ProcessingStatus = ({
   const [animatedProgress, setAnimatedProgress] = useState(0);
   
   useEffect(() => {
-    const timer = setTimeout(() => setAnimatedProgress(progress), 100);
-    return () => clearTimeout(timer);
+    setAnimatedProgress(progress);
   }, [progress]);
 
   if (!isProcessing && progress === 0) return null;

@@ -115,7 +115,6 @@ const CARDIOLOGY_SPECIFIC_PROMPT = `You are a specialized cardiology medical inf
 
 **REQUIRED OUTPUT FORMAT - FOLLOW EXACTLY:**
 
-**Header:**
 Patient Name: [Extract full name]
 DOB: [Extract MM/DD/YYYY]
 Date of Service: [Extract MM/DD/YYYY]
