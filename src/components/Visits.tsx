@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { CalendarDays, FileText, Plus } from "lucide-react";
+import { CalendarDays, FileText, Plus, Loader2 } from "lucide-react";
 
 interface VisitData {
   visits: Array<{
@@ -16,9 +16,10 @@ interface VisitData {
 interface VisitsProps {
   onComplete: (data: VisitData) => void;
   onBack: () => void;
+  isGenerating?: boolean;
 }
 
-export const Visits = ({ onComplete, onBack }: VisitsProps) => {
+export const Visits = ({ onComplete, onBack, isGenerating = false }: VisitsProps) => {
   const [visits, setVisits] = useState<Array<{ date: string; note: string }>>([
     {
       date: new Date().toLocaleDateString('en-US', { 
@@ -171,9 +172,16 @@ export const Visits = ({ onComplete, onBack }: VisitsProps) => {
               <Button 
                 onClick={handleComplete} 
                 className="bg-primary hover:bg-primary/90"
-                disabled={getCompletedVisits() === 0}
+                disabled={getCompletedVisits() === 0 || isGenerating}
               >
-                Generate Final Note
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Generate Final Note"
+                )}
               </Button>
             </div>
           </div>

@@ -776,6 +776,7 @@ const Index = () => {
             <Visits 
               onComplete={handleVisitsComplete}
               onBack={() => setCurrentStep(5)}
+              isGenerating={isGenerating}
             />
             
             {/* Live note preview during editing */}
