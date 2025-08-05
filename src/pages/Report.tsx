@@ -299,11 +299,24 @@ export default function Report() {
                 <CardContent>
                   <div className="space-y-4">
                     {Array.isArray(report.visit_notes) ? (
-                      report.visit_notes.map((note, index) => (
+                      report.visit_notes.map((visit, index) => (
                         <div key={index} className="border rounded-lg p-4">
-                          <div className="text-sm text-foreground whitespace-pre-wrap">
-                            {typeof note === 'string' ? note : JSON.stringify(note, null, 2)}
-                          </div>
+                          {typeof visit === 'object' && visit.date && visit.note ? (
+                            <div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {visit.date}
+                                </Badge>
+                              </div>
+                              <div className="text-sm text-foreground">
+                                {visit.note}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-sm text-foreground whitespace-pre-wrap">
+                              {typeof visit === 'string' ? visit : JSON.stringify(visit, null, 2)}
+                            </div>
+                          )}
                         </div>
                       ))
                     ) : typeof report.visit_notes === 'object' ? (
