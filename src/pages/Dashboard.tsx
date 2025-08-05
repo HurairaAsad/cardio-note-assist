@@ -3,9 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { FileText, Plus, LogOut, User, Calendar, Clock } from 'lucide-react';
+import { DashboardSidebar } from '@/components/DashboardSidebar';
+import { DashboardHeader } from '@/components/DashboardHeader';
+import { MetricCards } from '@/components/MetricCards';
+import { FileText, Plus, Calendar } from 'lucide-react';
 import { formatDistanceToNow, format, subDays, eachDayOfInterval } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
@@ -113,202 +117,182 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted">
-      {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <FileText className="w-6 h-6 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">MedSummarize Dashboard</h1>
-              <p className="text-sm text-muted-foreground">
-                Welcome back, {profile?.full_name || user?.email}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
-              <User className="w-4 h-4 mr-2" />
-              Profile
-            </Button>
-            <Button variant="ghost" size="sm" onClick={signOut}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Reports</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{reports.length}</div>
-              <p className="text-xs text-muted-foreground">Clinical notes generated</p>
-            </CardContent>
-          </Card>
+    <SidebarProvider defaultOpen>
+      <div className="min-h-screen flex w-full bg-background">
+        <DashboardSidebar />
+        
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <DashboardHeader 
+            onNewReport={handleNewReport}
+            onSearch={(query) => console.log('Search:', query)}
+          />
           
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">This Month</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {reports.filter(r => 
-                  new Date(r.created_at).getMonth() === new Date().getMonth()
-                ).length}
-              </div>
-              <p className="text-xs text-muted-foreground">Reports this month</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Latest Activity</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {reports.length > 0 ? formatDistanceToNow(new Date(reports[0].created_at), { addSuffix: true }) : 'No activity'}
-              </div>
-              <p className="text-xs text-muted-foreground">Last report generated</p>
-            </CardContent>
-          </Card>
-        </div>
+          <main className="flex-1 overflow-y-auto p-6 space-y-6">
+            {/* Enhanced Metric Cards */}
+            <MetricCards reports={reports} />
 
-        {/* Analytics Charts */}
-        {reports.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Activity Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Activity Over Time</CardTitle>
-                <CardDescription>Reports generated in the last 7 days</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[200px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={getActivityData()}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" fontSize={12} />
-                      <YAxis fontSize={12} />
-                      <Tooltip />
-                      <Line 
-                        type="monotone" 
-                        dataKey="reports" 
-                        stroke="hsl(var(--primary))" 
-                        strokeWidth={2}
-                        dot={{ fill: "hsl(var(--primary))", strokeWidth: 2 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Template Distribution */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Report Types</CardTitle>
-                <CardDescription>Distribution by template type</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[200px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={getTemplateData()}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={40}
-                        outerRadius={80}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {getTemplateData().map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={getTemplateColor(index)} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  {getTemplateData().map((entry, index) => (
-                    <div key={entry.name} className="flex items-center gap-2 text-sm">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: getTemplateColor(index) }}
-                      />
-                      <span className="truncate">{entry.name}: {entry.value}</span>
+            {/* Analytics Charts */}
+            {reports.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Activity Chart */}
+                <Card className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Activity Over Time</CardTitle>
+                    <CardDescription>Reports generated in the last 7 days</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[250px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={getActivityData()}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                          <XAxis 
+                            dataKey="date" 
+                            fontSize={12} 
+                            stroke="hsl(var(--muted-foreground))"
+                          />
+                          <YAxis 
+                            fontSize={12} 
+                            stroke="hsl(var(--muted-foreground))"
+                          />
+                          <Tooltip 
+                            contentStyle={{
+                              backgroundColor: "hsl(var(--card))",
+                              border: "1px solid hsl(var(--border))",
+                              borderRadius: "8px"
+                            }}
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="reports" 
+                            stroke="hsl(var(--primary))" 
+                            strokeWidth={3}
+                            dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
+                            activeDot={{ r: 6, stroke: "hsl(var(--primary))", strokeWidth: 2 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
                     </div>
-                  ))}
+                  </CardContent>
+                </Card>
+
+                {/* Template Distribution */}
+                <Card className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Report Types</CardTitle>
+                    <CardDescription>Distribution by template type</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[250px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={getTemplateData()}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={90}
+                            paddingAngle={5}
+                            dataKey="value"
+                          >
+                            {getTemplateData().map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={getTemplateColor(index)} />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            contentStyle={{
+                              backgroundColor: "hsl(var(--card))",
+                              border: "1px solid hsl(var(--border))",
+                              borderRadius: "8px"
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      {getTemplateData().map((entry, index) => (
+                        <div key={entry.name} className="flex items-center gap-2 text-sm">
+                          <div 
+                            className="w-3 h-3 rounded-full flex-shrink-0" 
+                            style={{ backgroundColor: getTemplateColor(index) }}
+                          />
+                          <span className="truncate">{entry.name}: {entry.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Recent Reports Section */}
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="text-xl">Recent Reports</CardTitle>
+                    <CardDescription>Your latest clinical note reports</CardDescription>
+                  </div>
+                  <Button onClick={handleNewReport} className="gap-2">
+                    <Plus className="w-4 h-4" />
+                    New Report
+                  </Button>
                 </div>
+              </CardHeader>
+              <CardContent>
+                {reports.length === 0 ? (
+                  <div className="text-center py-12">
+                    <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No reports yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Start by creating your first clinical note report
+                    </p>
+                    <Button onClick={handleNewReport}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create First Report
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {reports.slice(0, 5).map((report) => (
+                      <div 
+                        key={report.id} 
+                        className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer" 
+                        onClick={() => handleViewReport(report.id)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                            <FileText className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <h4 className="font-medium">{report.title}</h4>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <span>{formatDistanceToNow(new Date(report.created_at), { addSuffix: true })}</span>
+                              {report.original_document_name && (
+                                <>
+                                  <span>•</span>
+                                  <span>{report.original_document_name}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <Badge variant="secondary">{report.template_type}</Badge>
+                      </div>
+                    ))}
+                    {reports.length > 5 && (
+                      <div className="text-center pt-4">
+                        <Button variant="outline" onClick={() => navigate('/reports')}>
+                          View All Reports ({reports.length})
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Recent Reports</h2>
-          <Button onClick={handleNewReport} className="gap-2">
-            <Plus className="w-4 h-4" />
-            New Report
-          </Button>
+          </main>
         </div>
-
-        {/* Reports List */}
-        {reports.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No reports yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Start by creating your first clinical note report
-              </p>
-              <Button onClick={handleNewReport}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create First Report
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4">
-            {reports.map((report) => (
-              <Card key={report.id} className="hover:shadow-md transition-shadow cursor-pointer" 
-                    onClick={() => handleViewReport(report.id)}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{report.title}</CardTitle>
-                    <Badge variant="secondary">{report.template_type}</Badge>
-                  </div>
-                  <CardDescription className="flex items-center gap-4">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {formatDistanceToNow(new Date(report.created_at), { addSuffix: true })}
-                    </span>
-                    {report.original_document_name && (
-                      <span className="flex items-center gap-1">
-                        <FileText className="w-3 h-3" />
-                        {report.original_document_name}
-                      </span>
-                    )}
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-        )}
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
