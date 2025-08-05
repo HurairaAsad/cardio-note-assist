@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +23,7 @@ const Index = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [generatedSummary, setGeneratedSummary] = useState<string>("");
+  const [liveNotePreview, setLiveNotePreview] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [fileValidation, setFileValidation] = useState<any>(null);
   const [processingDetails, setProcessingDetails] = useState<any>(null);
@@ -37,6 +38,144 @@ const Index = () => {
   const [documentType, setDocumentType] = useState<string>('');
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Generate live note preview whenever form data changes
+  const generateLiveNotePreview = () => {
+    if (!extractedData) return extractedData;
+    
+    let liveNote = extractedData;
+    
+    // Add vitals if available
+    if (physicalExamData?.vitals) {
+      const vitalsLine = `\nVitals: Weight: ${physicalExamData.vitals.weight || '___'}lbs, BP ${physicalExamData.vitals.bp || '___/___'}, Pulse ${physicalExamData.vitals.pulse || '___'}bpm, RR ${physicalExamData.vitals.rr || '___'}, O2 sats ${physicalExamData.vitals.o2sats || '___'}%`;
+      
+      // Try to insert vitals in a logical place
+      if (liveNote.includes('PHYSICAL EXAMINATION') || liveNote.includes('Physical Examination')) {
+        liveNote = liveNote.replace(
+          /(PHYSICAL EXAMINATION|Physical Examination)[^\n]*/i, 
+          `$&${vitalsLine}`
+        );
+      } else {
+        liveNote += `\n\nPHYSICAL EXAMINATION${vitalsLine}`;
+      }
+    }
+    
+    // Add ROS data if available
+    if (reviewOfSystemsData) {
+      const rosSection = formatRosForPreview(reviewOfSystemsData);
+      if (rosSection) {
+        liveNote += `\n\nREVIEW OF SYSTEMS:\n${rosSection}`;
+      }
+    }
+    
+    // Add physical exam findings if available
+    if (physicalExamData) {
+      const examSection = formatPhysicalExamForPreview(physicalExamData);
+      if (examSection) {
+        liveNote += `\n\nPHYSICAL EXAMINATION FINDINGS:\n${examSection}`;
+      }
+    }
+    
+    // Add visits if available
+    if (visitsData?.visits) {
+      const visitsSection = formatVisitsForPreview(visitsData.visits);
+      if (visitsSection) {
+        liveNote += `\n\nVISITS:\n${visitsSection}`;
+      }
+    }
+    
+    return liveNote;
+  };
+
+  const formatRosForPreview = (rosData: any): string => {
+    if (!rosData) return '';
+    
+    const sections = [
+      { key: 'general', title: 'General' },
+      { key: 'head', title: 'Head' },
+      { key: 'eyes', title: 'Eyes' },
+      { key: 'ears', title: 'Ears' },
+      { key: 'nose', title: 'Nose' },
+      { key: 'mouth', title: 'Mouth' },
+      { key: 'neck', title: 'Neck' },
+      { key: 'chest', title: 'Chest' },
+      { key: 'cardiovascular', title: 'Cardiovascular' },
+      { key: 'gastrointestinal', title: 'Gastrointestinal' },
+      { key: 'genitourinary', title: 'Genitourinary' },
+      { key: 'musculoskeletal', title: 'Musculoskeletal' },
+      { key: 'neurological', title: 'Neurological' },
+      { key: 'psychiatric', title: 'Psychiatric' },
+      { key: 'endocrine', title: 'Endocrine' },
+      { key: 'hematologic', title: 'Hematologic' },
+      { key: 'allergic', title: 'Allergic' }
+    ];
+
+    let formatted = '';
+    sections.forEach(section => {
+      if (rosData[section.key] && typeof rosData[section.key] === 'object') {
+        const items = Object.entries(rosData[section.key])
+          .map(([item, value]) => `(${value ? 'Y' : 'N'}) ${item}`)
+          .join(', ');
+        if (items) {
+          formatted += `${section.title}: ${items}\n`;
+        }
+      }
+    });
+
+    return formatted;
+  };
+
+  const formatPhysicalExamForPreview = (examData: any): string => {
+    if (!examData) return '';
+
+    const sections = [
+      { key: 'general', title: 'General' },
+      { key: 'head', title: 'Head' },
+      { key: 'eyes', title: 'Eyes' },
+      { key: 'ears', title: 'Ears' },
+      { key: 'nose', title: 'Nose' },
+      { key: 'throat', title: 'Throat' },
+      { key: 'neck', title: 'Neck' },
+      { key: 'chest', title: 'Chest' },
+      { key: 'heart', title: 'Heart' },
+      { key: 'abdomen', title: 'Abdomen' },
+      { key: 'back', title: 'Back' },
+      { key: 'extremities', title: 'Extremities' },
+      { key: 'neuro', title: 'Neuro' },
+      { key: 'skin', title: 'Skin' }
+    ];
+
+    let formatted = '';
+    sections.forEach(section => {
+      if (examData[section.key] && typeof examData[section.key] === 'object') {
+        const items = Object.entries(examData[section.key])
+          .map(([item, value]) => `(${value ? 'Y' : 'N'}) ${item}`)
+          .join(', ');
+        if (items) {
+          formatted += `${section.title}: ${items}\n`;
+        }
+      }
+    });
+
+    return formatted;
+  };
+
+  const formatVisitsForPreview = (visits: any[]): string => {
+    if (!visits || visits.length === 0) return '';
+    
+    return visits
+      .filter(visit => visit.note.trim().length > 0)
+      .map(visit => `(DOS - ${visit.date}): ${visit.note}`)
+      .join('\n');
+  };
+
+  // Update live preview whenever form data changes
+  useEffect(() => {
+    if (extractedData) {
+      const preview = generateLiveNotePreview();
+      setLiveNotePreview(preview);
+    }
+  }, [extractedData, reviewOfSystemsData, physicalExamData, visitsData]);
 
   const CLAUDE_API_KEY = "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";
 
@@ -108,13 +247,24 @@ const Index = () => {
   };
 
   const handleVisitsComplete = async (visits: any) => {
+    console.log('🚀 handleVisitsComplete called with visits:', visits);
+    console.log('📋 Current state:', { 
+      user: user?.id, 
+      extractedData: extractedData.length, 
+      selectedTemplate,
+      reviewOfSystemsData: !!reviewOfSystemsData,
+      physicalExamData: !!physicalExamData 
+    });
+    
     setVisitsData(visits);
     setIsGenerating(true);
     
     try {
+      console.log('⏳ Starting final note generation...');
       const extractor = new MedicalRecordExtractor(CLAUDE_API_KEY);
       
       // Generate final note combining analysis with current assessments
+      console.log('🔄 Calling generateFinalNoteWithAllData...');
       const finalNote = await extractor.generateFinalNoteWithAllData(
         extractedData, // This is the original analysis
         selectedTemplate, 
@@ -122,6 +272,9 @@ const Index = () => {
         physicalExamData,
         visits
       );
+      
+      console.log('✅ Final note generated successfully, length:', finalNote.length);
+      console.log('📝 Final note preview:', finalNote.substring(0, 200));
       
       // Replace the summary with the combined final note and advance step
       setGeneratedSummary(finalNote);
@@ -195,14 +348,20 @@ const Index = () => {
       });
       
     } catch (error: any) {
-      console.error("Final note generation error:", error);
+      console.error("❌ Final note generation error:", error);
+      console.error("❌ Error details:", {
+        message: error.message,
+        stack: error.stack,
+        cause: error.cause
+      });
       toast({
         title: "Generation failed",
-        description: "Failed to generate final clinical note. Please try again.",
+        description: `Failed to generate final clinical note: ${error.message}`,
         variant: "destructive",
       });
     } finally {
       setIsGenerating(false);
+      console.log('✅ Generation process complete');
     }
   };
 
@@ -564,25 +723,76 @@ const Index = () => {
         )}
 
         {currentStep === 4 && (
-          <ReviewOfSystems 
-            onComplete={handleReviewOfSystemsComplete}
-            onBack={() => setCurrentStep(3)}
-          />
+          <div className="space-y-6">
+            <ReviewOfSystems 
+              onComplete={handleReviewOfSystemsComplete}
+              onBack={() => setCurrentStep(3)}
+            />
+            
+            {/* Live note preview during editing */}
+            {liveNotePreview && (
+              <Card className="border-blue-200 bg-blue-50/50">
+                <CardHeader>
+                  <CardTitle className="text-lg text-blue-800">Live Note Preview</CardTitle>
+                  <CardDescription>Real-time preview showing your edits as you make them</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-white p-4 rounded border max-h-96 overflow-y-auto">
+                    <pre className="whitespace-pre-wrap text-sm font-mono">{liveNotePreview}</pre>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         {currentStep === 5 && (
-          <PhysicalExam 
-            onComplete={handlePhysicalExamComplete}
-            onBack={() => setCurrentStep(4)}
-            extractedVitals={processingDetails?.metadata?.vitals}
-          />
+          <div className="space-y-6">
+            <PhysicalExam 
+              onComplete={handlePhysicalExamComplete}
+              onBack={() => setCurrentStep(4)}
+              extractedVitals={processingDetails?.metadata?.vitals}
+            />
+            
+            {/* Live note preview during editing */}
+            {liveNotePreview && (
+              <Card className="border-blue-200 bg-blue-50/50">
+                <CardHeader>
+                  <CardTitle className="text-lg text-blue-800">Live Note Preview</CardTitle>
+                  <CardDescription>Real-time preview showing your edits as you make them</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-white p-4 rounded border max-h-96 overflow-y-auto">
+                    <pre className="whitespace-pre-wrap text-sm font-mono">{liveNotePreview}</pre>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         {currentStep === 6 && (
-          <Visits 
-            onComplete={handleVisitsComplete}
-            onBack={() => setCurrentStep(5)}
-          />
+          <div className="space-y-6">
+            <Visits 
+              onComplete={handleVisitsComplete}
+              onBack={() => setCurrentStep(5)}
+            />
+            
+            {/* Live note preview during editing */}
+            {liveNotePreview && (
+              <Card className="border-blue-200 bg-blue-50/50">
+                <CardHeader>
+                  <CardTitle className="text-lg text-blue-800">Live Note Preview</CardTitle>
+                  <CardDescription>Real-time preview showing your edits as you make them</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-white p-4 rounded border max-h-96 overflow-y-auto">
+                    <pre className="whitespace-pre-wrap text-sm font-mono">{liveNotePreview}</pre>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         )}
 
         {currentStep === 7 && (

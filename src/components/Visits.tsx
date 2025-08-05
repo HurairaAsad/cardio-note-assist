@@ -54,6 +54,9 @@ export const Visits = ({ onComplete, onBack }: VisitsProps) => {
   };
 
   const handleComplete = () => {
+    console.log('🔄 Visits handleComplete called');
+    console.log('📋 Visits data:', { visits });
+    console.log('✅ Completed visits count:', getCompletedVisits());
     onComplete({ visits });
   };
 

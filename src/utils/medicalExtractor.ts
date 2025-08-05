@@ -439,10 +439,26 @@ Please generate the final clinical note now:`;
     visitsData: any
   ): Promise<string> {
     try {
+      console.log('🔄 generateFinalNoteWithAllData started');
+      console.log('📊 Input data summary:', {
+        extractedData: extractedData.length,
+        template,
+        rosData: !!rosData,
+        physicalExamData: !!physicalExamData,
+        visitsData: !!visitsData
+      });
+      
       // Format all collected data
+      console.log('📝 Formatting data...');
       const formattedROS = this.formatReviewOfSystems(rosData);
       const formattedPhysicalExam = this.formatPhysicalExam(physicalExamData);
       const formattedVisits = this.formatVisits(visitsData);
+      
+      console.log('✅ Formatted data lengths:', {
+        formattedROS: formattedROS.length,
+        formattedPhysicalExam: formattedPhysicalExam.length,
+        formattedVisits: formattedVisits.length
+      });
       
       const finalPrompt = `${this.getTemplatePrompt(template)}
 
@@ -470,6 +486,10 @@ INSTRUCTIONS:
 
 Please generate the final clinical note now:`;
 
+      console.log('🚀 Making API call to Claude...');
+      console.log('📄 Final prompt length:', finalPrompt.length);
+      console.log('🔑 API key available:', !!this.anthropic);
+      
       const response = await this.anthropic.messages.create({
         model: 'claude-opus-4-20250514',
         max_tokens: 8000,
@@ -481,9 +501,22 @@ Please generate the final clinical note now:`;
         }]
       });
 
-      return response.content[0].type === 'text' ? response.content[0].text : '';
+      console.log('✅ Claude API response received');
+      console.log('📝 Response type:', response.content[0]?.type);
+      console.log('📏 Response length:', response.content[0]?.type === 'text' ? response.content[0].text.length : 'Not text');
+      
+      const result = response.content[0].type === 'text' ? response.content[0].text : '';
+      console.log('🎯 Final result preview:', result.substring(0, 200));
+      
+      return result;
     } catch (error) {
-      console.error('Final note generation error:', error);
+      console.error('❌ Final note generation error:', error);
+      console.error('❌ Error type:', error.constructor.name);
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack,
+        cause: error.cause
+      });
       throw new Error(`Failed to generate final note: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
