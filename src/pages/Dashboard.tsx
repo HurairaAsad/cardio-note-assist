@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { DashboardSidebar } from '@/components/DashboardSidebar';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { MetricCards } from '@/components/MetricCards';
+import { BillingSummaryWidget } from '@/components/BillingSummaryWidget';
 import { FileText, Plus, Calendar } from 'lucide-react';
 import { formatDistanceToNow, format, subDays, eachDayOfInterval } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
@@ -130,6 +131,9 @@ export default function Dashboard() {
           <main className="flex-1 overflow-y-auto p-6 space-y-6">
             {/* Enhanced Metric Cards */}
             <MetricCards reports={reports} />
+
+            {/* Billing Summary Widget */}
+            <BillingSummaryWidget />
 
             {/* Analytics Charts */}
             {reports.length > 0 && (

@@ -7,7 +7,8 @@ import {
   Settings, 
   User,
   ChevronRight,
-  Stethoscope
+  Stethoscope,
+  CreditCard
 } from "lucide-react";
 import {
   Sidebar,
@@ -29,6 +30,7 @@ const navigation = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Reports", url: "/reports", icon: FileText },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
+  { title: "Billing", url: "/billing", icon: CreditCard },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
