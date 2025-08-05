@@ -109,7 +109,6 @@ const Index = () => {
 
   const handleVisitsComplete = async (visits: any) => {
     setVisitsData(visits);
-    setCurrentStep(7);
     setIsGenerating(true);
     
     try {
@@ -124,8 +123,9 @@ const Index = () => {
         visits
       );
       
-      // Replace the summary with the combined final note
+      // Replace the summary with the combined final note and advance step
       setGeneratedSummary(finalNote);
+      setCurrentStep(7);
       
       // Save report to database if user is logged in
       if (user) {
