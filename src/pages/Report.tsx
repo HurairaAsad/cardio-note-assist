@@ -235,9 +235,27 @@ export default function Report() {
                   <CardTitle className="text-lg">Review of Systems</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <pre className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {JSON.stringify(report.review_of_systems, null, 2)}
-                  </pre>
+                  <div className="space-y-4">
+                    {Object.entries(report.review_of_systems).map(([system, symptoms]) => (
+                      <div key={system} className="border rounded-lg p-4">
+                        <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-3">
+                          {system.replace(/([A-Z])/g, ' $1').trim()}
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {typeof symptoms === 'object' && symptoms && Object.entries(symptoms).map(([symptom, value]) => (
+                            <div key={symptom} className="flex items-center justify-between text-sm">
+                              <span className="text-foreground capitalize">
+                                {symptom.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim()}
+                              </span>
+                              <Badge variant={value ? "destructive" : "secondary"} className="text-xs">
+                                {value ? "Yes" : "No"}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -248,9 +266,27 @@ export default function Report() {
                   <CardTitle className="text-lg">Physical Exam</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <pre className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {JSON.stringify(report.physical_exam, null, 2)}
-                  </pre>
+                  <div className="space-y-4">
+                    {Object.entries(report.physical_exam).map(([system, findings]) => (
+                      <div key={system} className="border rounded-lg p-4">
+                        <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-3">
+                          {system.replace(/([A-Z])/g, ' $1').trim()}
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {typeof findings === 'object' && findings && Object.entries(findings).map(([finding, value]) => (
+                            <div key={finding} className="flex items-center justify-between text-sm">
+                              <span className="text-foreground capitalize">
+                                {finding.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim()}
+                              </span>
+                              <Badge variant={value ? "destructive" : "secondary"} className="text-xs">
+                                {value ? "Yes" : "No"}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -261,9 +297,32 @@ export default function Report() {
                   <CardTitle className="text-lg">Visit Notes</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <pre className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {JSON.stringify(report.visit_notes, null, 2)}
-                  </pre>
+                  <div className="space-y-4">
+                    {Array.isArray(report.visit_notes) ? (
+                      report.visit_notes.map((note, index) => (
+                        <div key={index} className="border rounded-lg p-4">
+                          <div className="text-sm text-foreground whitespace-pre-wrap">
+                            {typeof note === 'string' ? note : JSON.stringify(note, null, 2)}
+                          </div>
+                        </div>
+                      ))
+                    ) : typeof report.visit_notes === 'object' ? (
+                      Object.entries(report.visit_notes).map(([key, value]) => (
+                        <div key={key} className="border rounded-lg p-4">
+                          <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">
+                            {key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim()}
+                          </h4>
+                          <div className="text-sm text-foreground whitespace-pre-wrap">
+                            {typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-foreground whitespace-pre-wrap">
+                        {report.visit_notes}
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )}
