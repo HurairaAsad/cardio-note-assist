@@ -126,6 +126,12 @@ const Index = () => {
       // Replace the summary with the combined final note and advance step
       setGeneratedSummary(finalNote);
       setCurrentStep(7);
+      setIsGenerating(false);
+      
+      toast({
+        title: "Final clinical note generated",
+        description: "Your comprehensive note is ready.",
+      });
       
       // Save report to database if user is logged in
       if (user) {
