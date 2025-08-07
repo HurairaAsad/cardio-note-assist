@@ -11,7 +11,10 @@ import { DashboardHeader } from '@/components/DashboardHeader';
 import { MetricCards } from '@/components/MetricCards';
 import { BillingSummaryWidget } from '@/components/BillingSummaryWidget';
 import { ReportsDataTable } from '@/components/ReportsDataTable';
-import { FileText, Plus, Calendar } from 'lucide-react';
+import { ResponsiveTabs } from '@/components/ResponsiveTabs';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { FloatingActionButton } from '@/components/FloatingActionButton';
+import { FileText, Plus, Calendar, BarChart3, CreditCard, Activity } from 'lucide-react';
 import { formatDistanceToNow, format, subDays, eachDayOfInterval } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
@@ -109,12 +112,22 @@ export default function Dashboard() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
+      <SidebarProvider defaultOpen>
+        <div className="min-h-screen flex w-full bg-background">
+          <DashboardSidebar />
+          <div className="flex flex-col flex-1">
+            <DashboardHeader 
+              onNewReport={handleNewReport}
+              onSearch={(query) => console.log('Search:', query)}
+            />
+            <main className="flex-1 p-6 space-y-6">
+              <LoadingSkeleton variant="metrics" />
+              <LoadingSkeleton variant="chart" count={2} />
+              <LoadingSkeleton variant="table" count={5} />
+            </main>
+          </div>
         </div>
-      </div>
+      </SidebarProvider>
     );
   }
 
@@ -130,135 +143,192 @@ export default function Dashboard() {
           />
           
           <main className="flex-1 overflow-y-auto p-6 space-y-6">
-            {/* Enhanced Metric Cards */}
-            <MetricCards reports={reports} />
+            {/* Enhanced Tabbed Dashboard */}
+            <ResponsiveTabs
+              defaultValue="overview"
+              tabs={[
+                {
+                  value: "overview",
+                  label: "Overview",
+                  icon: <Activity className="h-4 w-4" />,
+                  content: (
+                    <div className="space-y-6 animate-fade-in">
+                      <MetricCards reports={reports} />
+                      <BillingSummaryWidget />
+                      
+                      {reports.length > 0 && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          {/* Activity Chart */}
+                          <Card className="soft-hover">
+                            <CardHeader>
+                              <CardTitle className="text-lg">Activity Over Time</CardTitle>
+                              <CardDescription>Reports generated in the last 7 days</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="h-[250px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <LineChart data={getActivityData()}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
+                                    <XAxis 
+                                      dataKey="date" 
+                                      fontSize={12} 
+                                      stroke="hsl(var(--muted-foreground))"
+                                    />
+                                    <YAxis 
+                                      fontSize={12} 
+                                      stroke="hsl(var(--muted-foreground))"
+                                    />
+                                    <Tooltip 
+                                      contentStyle={{
+                                        backgroundColor: "hsl(var(--card))",
+                                        border: "1px solid hsl(var(--border))",
+                                        borderRadius: "8px"
+                                      }}
+                                    />
+                                    <Line 
+                                      type="monotone" 
+                                      dataKey="reports" 
+                                      stroke="hsl(var(--primary))" 
+                                      strokeWidth={3}
+                                      dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
+                                      activeDot={{ r: 6, stroke: "hsl(var(--primary))", strokeWidth: 2 }}
+                                    />
+                                  </LineChart>
+                                </ResponsiveContainer>
+                              </div>
+                            </CardContent>
+                          </Card>
 
-            {/* Billing Summary Widget */}
-            <BillingSummaryWidget />
-
-            {/* Analytics Charts */}
-            {reports.length > 0 && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Activity Chart */}
-                <Card className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Activity Over Time</CardTitle>
-                    <CardDescription>Reports generated in the last 7 days</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[250px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={getActivityData()}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
-                          <XAxis 
-                            dataKey="date" 
-                            fontSize={12} 
-                            stroke="hsl(var(--muted-foreground))"
-                          />
-                          <YAxis 
-                            fontSize={12} 
-                            stroke="hsl(var(--muted-foreground))"
-                          />
-                          <Tooltip 
-                            contentStyle={{
-                              backgroundColor: "hsl(var(--card))",
-                              border: "1px solid hsl(var(--border))",
-                              borderRadius: "8px"
-                            }}
-                          />
-                          <Line 
-                            type="monotone" 
-                            dataKey="reports" 
-                            stroke="hsl(var(--primary))" 
-                            strokeWidth={3}
-                            dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
-                            activeDot={{ r: 6, stroke: "hsl(var(--primary))", strokeWidth: 2 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Template Distribution */}
-                <Card className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Report Types</CardTitle>
-                    <CardDescription>Distribution by template type</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[250px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={getTemplateData()}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={50}
-                            outerRadius={90}
-                            paddingAngle={5}
-                            dataKey="value"
-                          >
-                            {getTemplateData().map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={getTemplateColor(index)} />
-                            ))}
-                          </Pie>
-                          <Tooltip 
-                            contentStyle={{
-                              backgroundColor: "hsl(var(--card))",
-                              border: "1px solid hsl(var(--border))",
-                              borderRadius: "8px"
-                            }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                      {getTemplateData().map((entry, index) => (
-                        <div key={entry.name} className="flex items-center gap-2 text-sm">
-                          <div 
-                            className="w-3 h-3 rounded-full flex-shrink-0" 
-                            style={{ backgroundColor: getTemplateColor(index) }}
-                          />
-                          <span className="truncate">{entry.name}: {entry.value}</span>
+                          {/* Template Distribution */}
+                          <Card className="soft-hover">
+                            <CardHeader>
+                              <CardTitle className="text-lg">Report Types</CardTitle>
+                              <CardDescription>Distribution by template type</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="h-[250px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <PieChart>
+                                    <Pie
+                                      data={getTemplateData()}
+                                      cx="50%"
+                                      cy="50%"
+                                      innerRadius={50}
+                                      outerRadius={90}
+                                      paddingAngle={5}
+                                      dataKey="value"
+                                    >
+                                      {getTemplateData().map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={getTemplateColor(index)} />
+                                      ))}
+                                    </Pie>
+                                    <Tooltip 
+                                      contentStyle={{
+                                        backgroundColor: "hsl(var(--card))",
+                                        border: "1px solid hsl(var(--border))",
+                                        borderRadius: "8px"
+                                      }}
+                                    />
+                                  </PieChart>
+                                </ResponsiveContainer>
+                              </div>
+                              <div className="mt-4 grid grid-cols-2 gap-2">
+                                {getTemplateData().map((entry, index) => (
+                                  <div key={entry.name} className="flex items-center gap-2 text-sm">
+                                    <div 
+                                      className="w-3 h-3 rounded-full flex-shrink-0" 
+                                      style={{ backgroundColor: getTemplateColor(index) }}
+                                    />
+                                    <span className="truncate">{entry.name}: {entry.value}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
                         </div>
-                      ))}
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* Enhanced Reports Management */}
-            <ReportsDataTable 
-              reports={reports.map(report => ({
-                ...report,
-                status: 'success' as const,
-                processing_time: Math.random() * 5 + 1,
-                file_size: Math.floor(Math.random() * 500 + 100) * 1024,
-                is_favorited: Math.random() > 0.7,
-                is_archived: false,
-                tags: Math.random() > 0.5 ? ['urgent', 'follow-up'].slice(0, Math.floor(Math.random() * 2) + 1) : [],
-                content_preview: `Clinical summary for ${report.title.toLowerCase()}...`
-              }))}
-              onViewReport={handleViewReport}
-              onDeleteReports={(reportIds) => {
-                console.log('Deleting reports:', reportIds);
-                // Implement actual delete functionality
-              }}
-              onExportReports={(reportIds, format) => {
-                console.log('Exporting reports:', reportIds, 'as', format);
-                // Implement actual export functionality
-              }}
-              onToggleFavorite={(reportId) => {
-                console.log('Toggling favorite for report:', reportId);
-                // Implement actual favorite toggle functionality
-              }}
-              onArchiveReports={(reportIds) => {
-                console.log('Archiving reports:', reportIds);
-                // Implement actual archive functionality
-              }}
-              isLoading={loading}
+                  )
+                },
+                {
+                  value: "reports",
+                  label: "Reports",
+                  icon: <FileText className="h-4 w-4" />,
+                  content: (
+                    <div className="animate-fade-in">
+                      <ReportsDataTable 
+                        reports={reports.map(report => ({
+                          ...report,
+                          status: 'success' as const,
+                          processing_time: Math.random() * 5 + 1,
+                          file_size: Math.floor(Math.random() * 500 + 100) * 1024,
+                          is_favorited: Math.random() > 0.7,
+                          is_archived: false,
+                          tags: Math.random() > 0.5 ? ['urgent', 'follow-up'].slice(0, Math.floor(Math.random() * 2) + 1) : [],
+                          content_preview: `Clinical summary for ${report.title.toLowerCase()}...`
+                        }))}
+                        onViewReport={handleViewReport}
+                        onDeleteReports={(reportIds) => {
+                          console.log('Deleting reports:', reportIds);
+                          // Implement actual delete functionality
+                        }}
+                        onExportReports={(reportIds, format) => {
+                          console.log('Exporting reports:', reportIds, 'as', format);
+                          // Implement actual export functionality
+                        }}
+                        onToggleFavorite={(reportId) => {
+                          console.log('Toggling favorite for report:', reportId);
+                          // Implement actual favorite toggle functionality
+                        }}
+                        onArchiveReports={(reportIds) => {
+                          console.log('Archiving reports:', reportIds);
+                          // Implement actual archive functionality
+                        }}
+                        isLoading={loading}
+                      />
+                    </div>
+                  )
+                },
+                {
+                  value: "analytics",
+                  label: "Analytics",
+                  icon: <BarChart3 className="h-4 w-4" />,
+                  content: (
+                    <div className="animate-fade-in">
+                      <Card className="soft-hover">
+                        <CardHeader>
+                          <CardTitle>Advanced Analytics</CardTitle>
+                          <CardDescription>
+                            Detailed performance metrics and insights
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-muted-foreground">
+                            Advanced analytics dashboard coming soon...
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )
+                },
+                {
+                  value: "billing",
+                  label: "Billing",
+                  icon: <CreditCard className="h-4 w-4" />,
+                  content: (
+                    <div className="animate-fade-in">
+                      <BillingSummaryWidget />
+                    </div>
+                  )
+                }
+              ]}
+            />
+            
+            {/* Floating Action Button */}
+            <FloatingActionButton
+              onNewReport={handleNewReport}
+              onUploadDocument={() => navigate('/?step=upload')}
+              onQuickAnalyze={() => navigate('/?step=analyze')}
             />
           </main>
         </div>

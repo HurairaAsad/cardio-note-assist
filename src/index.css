@@ -104,7 +104,7 @@ All colors MUST be HSL.
   }
 }
 
-/* Soft UI Animations */
+/* Enhanced UI Animations & Effects */
 @layer utilities {
   .animate-fade-in {
     animation: fadeIn 0.6s ease-out;
@@ -117,22 +117,72 @@ All colors MUST be HSL.
   .animate-scale-in {
     animation: scaleIn 0.4s ease-out;
   }
+
+  .animate-bounce-in {
+    animation: bounceIn 0.5s ease-out;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.4s ease-out;
+  }
+
+  .animate-pulse-gentle {
+    animation: pulseGentle 2s ease-in-out infinite;
+  }
   
   .soft-shadow {
     box-shadow: 0 4px 20px -2px hsl(var(--primary) / 0.1), 
                 0 2px 8px -2px hsl(var(--primary) / 0.05);
   }
+
+  .glow-shadow {
+    box-shadow: 0 0 20px -5px hsl(var(--primary) / 0.3),
+                0 4px 20px -2px hsl(var(--primary) / 0.1);
+  }
   
   .soft-hover {
     @apply transition-all duration-300 ease-out hover:soft-shadow hover:-translate-y-1;
+  }
+
+  .glow-hover {
+    @apply transition-all duration-300 ease-out hover:glow-shadow hover:scale-105;
+  }
+
+  .interactive-hover {
+    @apply transition-all duration-200 ease-out hover:bg-accent/50 hover:scale-[1.02] cursor-pointer;
   }
   
   .glass-effect {
     @apply bg-background/80 backdrop-blur-sm border border-border/50;
   }
+
+  .frosted-glass {
+    @apply bg-background/60 backdrop-blur-md border border-border/30;
+  }
   
   .gradient-text {
     @apply bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent;
+  }
+
+  .gradient-border {
+    background: linear-gradient(hsl(var(--background)), hsl(var(--background))) padding-box,
+                linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent))) border-box;
+    border: 2px solid transparent;
+  }
+
+  /* Loading states */
+  .skeleton-pulse {
+    @apply animate-pulse bg-muted;
+  }
+
+  /* Touch-friendly */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+
+  /* Focus states for accessibility */
+  .focus-visible-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
   }
 }
 
@@ -166,5 +216,42 @@ All colors MUST be HSL.
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulseGentle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
   }
 }
