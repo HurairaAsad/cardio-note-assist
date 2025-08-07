@@ -406,10 +406,20 @@ export class MedicalRecordExtractor {
     templateType: string
   ): Promise<MedicalExtractionResult> {
     try {
+      // Implement content size limits to prevent API errors
+      const MAX_CONTENT_LENGTH = 50000; // Reasonable limit for combined content
+      
+      // Truncate content if too large while preserving important sections
+      const truncatedCcdText = this.truncateDocument(ccdText, MAX_CONTENT_LENGTH / 2);
+      const truncatedDischargeText = this.truncateDocument(dischargeText, MAX_CONTENT_LENGTH / 2);
+      
+      console.log(`CCD content: ${ccdText.length} chars -> ${truncatedCcdText.length} chars`);
+      console.log(`Discharge content: ${dischargeText.length} chars -> ${truncatedDischargeText.length} chars`);
+
       // Use dual document synthesis prompt
       const prompt = DUAL_DOCUMENT_SYNTHESIS_PROMPT
-        .replace('{ccd_text}', ccdText)
-        .replace('{discharge_text}', dischargeText);
+        .replace('{ccd_text}', truncatedCcdText)
+        .replace('{discharge_text}', truncatedDischargeText);
 
       const response = await this.anthropic.messages.create({
         model: "claude-sonnet-4-20250514",
@@ -449,7 +459,7 @@ export class MedicalRecordExtractor {
       } else if (error?.status === 429) {
         errorMessage = 'API rate limit exceeded. Please try again in a moment.';
       } else if (error?.status === 400) {
-        errorMessage = 'Invalid request. The combined document content may be too large.';
+        errorMessage = 'Document content too large. Try uploading smaller documents or contact support.';
       } else if (error?.message) {
         errorMessage = error.message;
       }
@@ -462,6 +472,26 @@ export class MedicalRecordExtractor {
   }
 
   /**
+   * Truncate document content while preserving important medical sections
+   */
+  private truncateDocument(text: string, maxLength: number): string {
+    if (text.length <= maxLength) return text;
+    
+    // Try to find good breaking points (end of sections, paragraphs)
+    const breakPoints = ['\n\n', '. ', '\n'];
+    
+    for (const breakPoint of breakPoints) {
+      const lastBreak = text.lastIndexOf(breakPoint, maxLength);
+      if (lastBreak > maxLength * 0.8) { // Keep at least 80% of desired length
+        return text.substring(0, lastBreak) + '\n\n[Content truncated for processing]';
+      }
+    }
+    
+    // Fallback: hard truncate
+    return text.substring(0, maxLength) + '\n\n[Content truncated for processing]';
+  }
+
+  /**
    * Process extracted text with Claude API for medical information
    */
   private async processMedicalText(
@@ -469,10 +499,18 @@ export class MedicalRecordExtractor {
     templateType: string
   ): Promise<MedicalExtractionResult> {
     try {
+      // Implement content size limits for single documents too
+      const MAX_SINGLE_CONTENT_LENGTH = 80000;
+      const truncatedText = this.truncateDocument(documentText, MAX_SINGLE_CONTENT_LENGTH);
+      
+      if (truncatedText.length !== documentText.length) {
+        console.log(`Single document content: ${documentText.length} chars -> ${truncatedText.length} chars`);
+      }
+
       // Choose appropriate prompt based on template type
       const prompt = templateType.toLowerCase().includes('cardiology') 
-        ? CARDIOLOGY_SPECIFIC_PROMPT.replace('{document_text}', documentText)
-        : COMPREHENSIVE_MEDICAL_EXTRACTION_PROMPT.replace('{document_text}', documentText);
+        ? CARDIOLOGY_SPECIFIC_PROMPT.replace('{document_text}', truncatedText)
+        : COMPREHENSIVE_MEDICAL_EXTRACTION_PROMPT.replace('{document_text}', truncatedText);
 
       const response = await this.anthropic.messages.create({
         model: "claude-sonnet-4-20250514",
