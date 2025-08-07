@@ -243,12 +243,13 @@ export class DocumentProcessor {
       case 'txt':
       case 'md':
       case 'rtf':
+      case 'xml':
         return await this.extractTextFromTextFile(file);
       
       default:
         return {
           success: false,
-          error: `Unsupported file type: ${fileExtension}. Supported types: PDF, TXT, MD, RTF`,
+          error: `Unsupported file type: ${fileExtension}. Supported types: PDF, TXT, MD, RTF, XML`,
           metadata: {
             fileSize: file.size,
             fileName: file.name,

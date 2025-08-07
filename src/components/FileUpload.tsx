@@ -48,10 +48,10 @@ export const FileUpload = ({
   const handleFileSelection = (file: File, fileType?: 'ccd' | 'discharge') => {
     if (!file) return;
     
-    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'text/xml', 'application/xml'];
     
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Please upload a PDF, DOCX, or TXT file");
+      toast.error("Please upload a PDF, DOCX, TXT, or XML file");
       return;
     }
     
@@ -105,7 +105,7 @@ export const FileUpload = ({
           <CardDescription className="text-muted-foreground">
             {isDualMode 
               ? "Upload both a CCD (Continuity of Care Document) and Hospital Discharge Summary for comprehensive analysis"
-              : "Upload a patient report, encounter note, or clinical document (PDF, DOCX, or TXT)"
+              : "Upload a patient report, encounter note, or clinical document (PDF, DOCX, TXT, or XML)"
             }
           </CardDescription>
         </CardHeader>
@@ -124,7 +124,7 @@ export const FileUpload = ({
                     </div>
                     <input
                       type="file"
-                      accept=".pdf,.docx,.txt"
+                      accept=".pdf,.docx,.txt,.xml"
                       onChange={(e) => e.target.files?.[0] && handleFileSelection(e.target.files[0], 'ccd')}
                       className="hidden"
                       id="ccd-upload"
@@ -163,7 +163,7 @@ export const FileUpload = ({
                     </div>
                     <input
                       type="file"
-                      accept=".pdf,.docx,.txt"
+                      accept=".pdf,.docx,.txt,.xml"
                       onChange={(e) => e.target.files?.[0] && handleFileSelection(e.target.files[0], 'discharge')}
                       className="hidden"
                       id="discharge-upload"
@@ -221,12 +221,12 @@ export const FileUpload = ({
                       Drop your file here, or click to browse
                     </p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Supports PDF, DOCX, and TXT files up to 50MB
+                      Supports PDF, DOCX, TXT, and XML files up to 50MB
                     </p>
                   </div>
                   <input
                     type="file"
-                    accept=".pdf,.docx,.txt"
+                    accept=".pdf,.docx,.txt,.xml"
                     onChange={handleFileInput}
                     className="hidden"
                     id="file-upload"
