@@ -187,7 +187,7 @@ Skin: (Y/N) Normal, (Y/N) rashes, (Y/N) lesions noted
 [Specific management plans, medication adjustments, follow-up recommendations]
 
 **Signoff:**
-[Provider name and credentials, supervising physician if applicable, time spent]
+{signoff_info}
 
 **CRITICAL INSTRUCTIONS:**
 - Fill in Y or N for each Review of Systems and Physical Exam item based on document findings
@@ -258,7 +258,8 @@ export class MedicalRecordExtractor {
    */
   async extractMedicalInfoFromDualDocuments(
     files: DualDocumentFiles,
-    templateType: string = 'general'
+    templateType: string = 'general',
+    userProfile?: { full_name?: string; license_number?: string; specialty?: string }
   ): Promise<MedicalExtractionResult> {
     try {
       // Step 1: Extract text from both documents
@@ -309,7 +310,8 @@ export class MedicalRecordExtractor {
       const extractionResult = await this.processDualMedicalText(
         ccdResult.text,
         dischargeResult.text,
-        templateType
+        templateType,
+        userProfile
       );
 
       return {
@@ -339,7 +341,8 @@ export class MedicalRecordExtractor {
    */
   async extractMedicalInfo(
     file: File, 
-    templateType: string = 'general'
+    templateType: string = 'general',
+    userProfile?: { full_name?: string; license_number?: string; specialty?: string }
   ): Promise<MedicalExtractionResult> {
     try {
       // Step 1: Extract text from document
@@ -376,7 +379,8 @@ export class MedicalRecordExtractor {
       console.log('Analyzing medical content with Claude AI...');
       const extractionResult = await this.processMedicalText(
         processingResult.text, 
-        templateType
+        templateType,
+        userProfile
       );
 
       return {
@@ -403,7 +407,8 @@ export class MedicalRecordExtractor {
   private async processDualMedicalText(
     ccdText: string,
     dischargeText: string,
-    templateType: string
+    templateType: string,
+    userProfile?: { full_name?: string; license_number?: string; specialty?: string }
   ): Promise<MedicalExtractionResult> {
     try {
       // Implement content size limits to prevent API errors
@@ -416,10 +421,14 @@ export class MedicalRecordExtractor {
       console.log(`CCD content: ${ccdText.length} chars -> ${truncatedCcdText.length} chars`);
       console.log(`Discharge content: ${dischargeText.length} chars -> ${truncatedDischargeText.length} chars`);
 
+      // Generate signoff information
+      const signoffInfo = this.generateSignoffInfo(userProfile);
+      
       // Use dual document synthesis prompt
       const prompt = DUAL_DOCUMENT_SYNTHESIS_PROMPT
         .replace('{ccd_text}', truncatedCcdText)
-        .replace('{discharge_text}', truncatedDischargeText);
+        .replace('{discharge_text}', truncatedDischargeText)
+        .replace('{signoff_info}', signoffInfo);
 
       const response = await this.anthropic.messages.create({
         model: "claude-sonnet-4-20250514",
@@ -496,7 +505,8 @@ export class MedicalRecordExtractor {
    */
   private async processMedicalText(
     documentText: string, 
-    templateType: string
+    templateType: string,
+    userProfile?: { full_name?: string; license_number?: string; specialty?: string }
   ): Promise<MedicalExtractionResult> {
     try {
       // Implement content size limits for single documents too
@@ -507,10 +517,13 @@ export class MedicalRecordExtractor {
         console.log(`Single document content: ${documentText.length} chars -> ${truncatedText.length} chars`);
       }
 
+      // Generate signoff information
+      const signoffInfo = this.generateSignoffInfo(userProfile);
+      
       // Choose appropriate prompt based on template type
       const prompt = templateType.toLowerCase().includes('cardiology') 
-        ? CARDIOLOGY_SPECIFIC_PROMPT.replace('{document_text}', truncatedText)
-        : COMPREHENSIVE_MEDICAL_EXTRACTION_PROMPT.replace('{document_text}', truncatedText);
+        ? CARDIOLOGY_SPECIFIC_PROMPT.replace('{document_text}', truncatedText).replace('{signoff_info}', signoffInfo)
+        : COMPREHENSIVE_MEDICAL_EXTRACTION_PROMPT.replace('{document_text}', truncatedText).replace('{signoff_info}', signoffInfo);
 
       const response = await this.anthropic.messages.create({
         model: "claude-sonnet-4-20250514",
@@ -798,5 +811,48 @@ Please generate the final clinical note now:`;
     });
 
     return formatted;
+  }
+
+  /**
+   * Generate signoff information using logged-in user profile
+   */
+  private generateSignoffInfo(userProfile?: { full_name?: string; license_number?: string; specialty?: string }): string {
+    if (!userProfile) {
+      return '[Provider name and credentials, supervising physician if applicable, time spent]';
+    }
+
+    let signoff = '';
+    
+    // Add provider name
+    if (userProfile.full_name) {
+      signoff += userProfile.full_name;
+    } else {
+      signoff += '[Provider name]';
+    }
+
+    // Add credentials/license
+    if (userProfile.license_number) {
+      signoff += `, License: ${userProfile.license_number}`;
+    }
+
+    // Add specialty
+    if (userProfile.specialty) {
+      signoff += `, ${userProfile.specialty}`;
+    }
+
+    // Add timestamp
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    const currentTime = new Date().toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    signoff += `\nSigned on: ${currentDate} at ${currentTime}`;
+    
+    return signoff;
   }
 }

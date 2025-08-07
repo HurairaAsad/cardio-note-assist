@@ -41,7 +41,7 @@ const Index = () => {
   const [processingProgress, setProcessingProgress] = useState(0);
   const [extractionMethod, setExtractionMethod] = useState<string>('');
   const [documentType, setDocumentType] = useState<string>('');
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
 
   // Generate live note preview whenever form data changes
@@ -457,8 +457,8 @@ const Index = () => {
       
       // Extract medical information using the appropriate pipeline
       const result = isDualMode && uploadedFiles
-        ? await extractor.extractMedicalInfoFromDualDocuments(uploadedFiles, selectedTemplate)
-        : await extractor.extractMedicalInfo(uploadedFile!, selectedTemplate);
+        ? await extractor.extractMedicalInfoFromDualDocuments(uploadedFiles, selectedTemplate, profile)
+        : await extractor.extractMedicalInfo(uploadedFile!, selectedTemplate, profile);
       
       setProcessingStage('ai-analysis');
       setProcessingProgress(60);
