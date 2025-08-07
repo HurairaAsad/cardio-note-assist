@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { DashboardSidebar } from '@/components/DashboardSidebar';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { MetricCards } from '@/components/MetricCards';
-import { BillingSummaryWidget } from '@/components/BillingSummaryWidget';
+
 import { ReportsDataTable } from '@/components/ReportsDataTable';
 import { ResponsiveTabs } from '@/components/ResponsiveTabs';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
@@ -154,7 +154,6 @@ export default function Dashboard() {
                   content: (
                     <div className="space-y-6 animate-fade-in">
                       <MetricCards reports={reports} />
-                      <BillingSummaryWidget />
                       
                       {reports.length > 0 && (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -308,16 +307,6 @@ export default function Dashboard() {
                           </p>
                         </CardContent>
                       </Card>
-                    </div>
-                  )
-                },
-                {
-                  value: "billing",
-                  label: "Billing",
-                  icon: <CreditCard className="h-4 w-4" />,
-                  content: (
-                    <div className="animate-fade-in">
-                      <BillingSummaryWidget />
                     </div>
                   )
                 }
