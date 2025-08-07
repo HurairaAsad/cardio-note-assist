@@ -13,6 +13,11 @@ export interface MedicalExtractionResult {
   };
 }
 
+export interface DualDocumentFiles {
+  ccd: File;
+  discharge: File;
+}
+
 const COMPREHENSIVE_MEDICAL_EXTRACTION_PROMPT = `You are a specialized medical information extraction system with advanced capabilities to process and organize medical documents. Extract and organize the following information into a comprehensive structured format.
 
 **CRITICAL INSTRUCTIONS:**
@@ -197,6 +202,45 @@ Skin: (Y/N) Normal, (Y/N) rashes, (Y/N) lesions noted
 
 Extract all available information and create a comprehensive cardiology progress note following the above EXACT format.`;
 
+const DUAL_DOCUMENT_SYNTHESIS_PROMPT = `You are processing TWO complementary medical documents:
+
+DOCUMENT 1 - CCD (Continuity of Care):
+- Contains: Historical data, baseline medications, allergies, past medical history
+- May lack: Recent procedures, updated medications, latest lab results
+
+DOCUMENT 2 - Hospital Discharge Summary:
+- Contains: Recent procedures, updated medications, latest hospital stay details
+- May lack: Comprehensive historical context, family history, social history
+
+SYNTHESIS INSTRUCTIONS:
+1. Extract historical/baseline info primarily from CCD
+2. Extract recent/updated info primarily from Discharge Summary
+3. When conflicts exist, prioritize Discharge Summary for recent changes
+4. Merge medication lists (baseline + new additions/changes)
+5. Combine all available information into comprehensive clinical note
+
+**CRITICAL AGE CALCULATION - APPLY TO BOTH DOCUMENTS:**
+- ALWAYS calculate age accurately using this exact formula: Age = (Service Date Year - Birth Year) minus 1 if birthday hasn't occurred yet in the service year
+- Use the most recent service date from either document
+- FORMAT: Always display as "XX-year-old" (e.g., "51-year-old female")
+
+**CCD DOCUMENT TEXT:**
+{ccd_text}
+
+**DISCHARGE SUMMARY TEXT:**
+{discharge_text}
+
+**SYNTHESIS REQUIREMENTS:**
+- Merge demographics (use most recent/complete data)
+- Combine past medical history with recent hospital course
+- Reconcile medication lists (show discontinued, new, and continued medications)
+- Integrate all available lab results with dates
+- Synthesize assessment and plan incorporating both historical and recent data
+- Maintain chronological order for events and procedures
+- Note source of information when relevant (e.g., "Per CCD history..." or "Per recent discharge...")
+
+Generate a comprehensive clinical note that intelligently combines information from both documents, following standard medical note formatting.`;
+
 export class MedicalRecordExtractor {
   private anthropic: Anthropic;
   private documentProcessor: DocumentProcessor;
@@ -207,6 +251,87 @@ export class MedicalRecordExtractor {
       dangerouslyAllowBrowser: true
     });
     this.documentProcessor = new DocumentProcessor();
+  }
+
+  /**
+   * Complete pipeline: dual document processing + synthesis
+   */
+  async extractMedicalInfoFromDualDocuments(
+    files: DualDocumentFiles,
+    templateType: string = 'general'
+  ): Promise<MedicalExtractionResult> {
+    try {
+      // Step 1: Extract text from both documents
+      console.log('Processing CCD document...', files.ccd.name);
+      const ccdResult = await this.documentProcessor.processFile(files.ccd);
+      
+      console.log('Processing Discharge Summary...', files.discharge.name);
+      const dischargeResult = await this.documentProcessor.processFile(files.discharge);
+      
+      if (!ccdResult.success || !ccdResult.text) {
+        return {
+          success: false,
+          error: `CCD processing failed: ${ccdResult.error || 'Failed to extract text'}`,
+          sourceMetadata: ccdResult.metadata
+        };
+      }
+      
+      if (!dischargeResult.success || !dischargeResult.text) {
+        return {
+          success: false,
+          error: `Discharge summary processing failed: ${dischargeResult.error || 'Failed to extract text'}`,
+          sourceMetadata: dischargeResult.metadata
+        };
+      }
+
+      console.log(`Extracted ${ccdResult.text.length} characters from CCD`);
+      console.log(`Extracted ${dischargeResult.text.length} characters from Discharge Summary`);
+
+      // Step 2: Validate medical content for both documents
+      const ccdValidation = this.documentProcessor.validateMedicalContent(ccdResult.text);
+      const dischargeValidation = this.documentProcessor.validateMedicalContent(dischargeResult.text);
+      
+      if (!ccdValidation.isValid && !dischargeValidation.isValid) {
+        return {
+          success: false,
+          error: 'Neither document appears to contain medical information',
+          validation: {
+            isMedical: false,
+            confidence: Math.max(ccdValidation.confidence, dischargeValidation.confidence),
+            reason: 'Both documents failed medical content validation'
+          },
+          sourceMetadata: { ccd: ccdResult.metadata, discharge: dischargeResult.metadata }
+        };
+      }
+
+      // Step 3: Synthesize information using Claude
+      console.log('Synthesizing dual document information with Claude AI...');
+      const extractionResult = await this.processDualMedicalText(
+        ccdResult.text,
+        dischargeResult.text,
+        templateType
+      );
+
+      return {
+        ...extractionResult,
+        validation: {
+          isMedical: ccdValidation.isValid || dischargeValidation.isValid,
+          confidence: Math.max(ccdValidation.confidence, dischargeValidation.confidence),
+          reason: 'Dual document synthesis completed'
+        },
+        sourceMetadata: {
+          ccd: ccdResult.metadata,
+          discharge: dischargeResult.metadata,
+          processingMethod: 'dual_document_synthesis'
+        }
+      };
+
+    } catch (error) {
+      return {
+        success: false,
+        error: `Dual document extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
   }
 
   /**
@@ -268,6 +393,70 @@ export class MedicalRecordExtractor {
       return {
         success: false,
         error: `Medical extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  /**
+   * Process dual documents with Claude API for synthesis
+   */
+  private async processDualMedicalText(
+    ccdText: string,
+    dischargeText: string,
+    templateType: string
+  ): Promise<MedicalExtractionResult> {
+    try {
+      // Use dual document synthesis prompt
+      const prompt = DUAL_DOCUMENT_SYNTHESIS_PROMPT
+        .replace('{ccd_text}', ccdText)
+        .replace('{discharge_text}', dischargeText);
+
+      const response = await this.anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 8000,
+        temperature: 0.1,
+        system: "You are an expert physician specializing in medical information synthesis. You excel at combining information from multiple medical documents to create comprehensive, accurate clinical notes. Use advanced medical reasoning to reconcile conflicts, merge medication lists, and integrate historical with recent data while maintaining clinical accuracy and professional formatting.",
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ]
+      });
+
+      const extractedNote = response.content[0]?.type === 'text' 
+        ? response.content[0].text 
+        : '';
+
+      if (!extractedNote) {
+        return {
+          success: false,
+          error: 'Claude API returned empty response for dual document synthesis'
+        };
+      }
+
+      return {
+        success: true,
+        extractedNote: extractedNote
+      };
+
+    } catch (error: any) {
+      console.error('Claude API Error (Dual Document):', error);
+      
+      let errorMessage = 'Claude API error during dual document synthesis';
+      if (error?.status === 401) {
+        errorMessage = 'Invalid API key. Please check your Claude API configuration.';
+      } else if (error?.status === 429) {
+        errorMessage = 'API rate limit exceeded. Please try again in a moment.';
+      } else if (error?.status === 400) {
+        errorMessage = 'Invalid request. The combined document content may be too large.';
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+
+      return {
+        success: false,
+        error: errorMessage
       };
     }
   }

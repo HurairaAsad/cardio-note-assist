@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileUpload } from "@/components/FileUpload";
 import { TemplateSelector } from "@/components/TemplateSelector";
@@ -15,12 +16,16 @@ import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
 import { ProcessingStatus } from "@/components/ProcessingStatus";
 import { FileText, Brain, Shield, Clock, AlertCircle, CheckCircle, FileSearch, Settings } from "lucide-react";
-import { MedicalRecordExtractor } from "@/utils/medicalExtractor";
+import { MedicalRecordExtractor, DualDocumentFiles } from "@/utils/medicalExtractor";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const Index = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<DualDocumentFiles | null>(null);
+  const [isDualMode, setIsDualMode] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [generatedSummary, setGeneratedSummary] = useState<string>("");
   const [liveNotePreview, setLiveNotePreview] = useState<string>("");
@@ -214,6 +219,55 @@ const Index = () => {
     }
   };
 
+  const handleDualFileUpload = async (files: DualDocumentFiles) => {
+    setUploadedFiles(files);
+    
+    const extractor = new MedicalRecordExtractor(CLAUDE_API_KEY);
+    
+    try {
+      // Validate both files
+      const ccdDiagnostics = await extractor.diagnoseFile(files.ccd);
+      const dischargeDiagnostics = await extractor.diagnoseFile(files.discharge);
+      
+      if (!ccdDiagnostics.supportedType || !ccdDiagnostics.sizeValid) {
+        toast({
+          title: "CCD file validation failed",
+          description: "Please check the CCD file requirements.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!dischargeDiagnostics.supportedType || !dischargeDiagnostics.sizeValid) {
+        toast({
+          title: "Discharge summary validation failed",
+          description: "Please check the discharge summary requirements.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setFileValidation({
+        ccd: ccdDiagnostics,
+        discharge: dischargeDiagnostics,
+        bothValid: true
+      });
+      
+      toast({
+        title: "Dual documents validated",
+        description: "Both documents are ready for processing.",
+      });
+      setCurrentStep(1);
+    } catch (error) {
+      console.error("Dual file validation error:", error);
+      toast({
+        title: "Validation failed",
+        description: "Failed to validate files. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleTemplateSelect = (template: string) => {
     setSelectedTemplate(template);
     setCurrentStep(2);
@@ -292,17 +346,20 @@ const Index = () => {
           console.log('Saving report for user:', user.id);
           console.log('User object:', user);
           
-          const reportData = {
-            user_id: user.id,
-            title: `Clinical Note - ${new Date().toLocaleDateString()}`,
-            original_document_name: uploadedFile?.name,
-            template_type: selectedTemplate,
-            initial_analysis: extractedData,
-            review_of_systems: reviewOfSystemsData,
-            physical_exam: physicalExamData,
-            visit_notes: visitsData, // Fixed: was using 'visits' instead of 'visitsData'
-            final_report: finalNote
-          };
+            const reportData = {
+              user_id: user.id,
+              title: `Clinical Note - ${new Date().toLocaleDateString()}`,
+              original_document_name: isDualMode && uploadedFiles 
+                ? `${uploadedFiles.ccd.name} + ${uploadedFiles.discharge.name}`
+                : uploadedFile?.name,
+              template_type: selectedTemplate,
+              initial_analysis: extractedData,
+              review_of_systems: reviewOfSystemsData,
+              physical_exam: physicalExamData,
+              visit_notes: visitsData,
+              final_report: finalNote,
+              processing_mode: isDualMode ? 'dual_document' : 'single_document'
+            };
           
           console.log('Report data to save:', reportData);
           
@@ -366,13 +423,24 @@ const Index = () => {
   };
 
   const handleGenerateSummary = async () => {
-    if (!uploadedFile || !selectedTemplate) {
-      toast({
-        title: "Missing requirements",
-        description: "Please ensure you have uploaded a file and selected a template.",
-        variant: "destructive",
-      });
-      return;
+    if (isDualMode) {
+      if (!uploadedFiles || !selectedTemplate) {
+        toast({
+          title: "Missing requirements",
+          description: "Please ensure you have uploaded both files and selected a template.",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else {
+      if (!uploadedFile || !selectedTemplate) {
+        toast({
+          title: "Missing requirements",
+          description: "Please ensure you have uploaded a file and selected a template.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
     
     setIsGenerating(true);
@@ -387,8 +455,10 @@ const Index = () => {
       setProcessingStage('reading');
       setProcessingProgress(20);
       
-      // Extract medical information using the comprehensive pipeline
-      const result = await extractor.extractMedicalInfo(uploadedFile, selectedTemplate);
+      // Extract medical information using the appropriate pipeline
+      const result = isDualMode && uploadedFiles
+        ? await extractor.extractMedicalInfoFromDualDocuments(uploadedFiles, selectedTemplate)
+        : await extractor.extractMedicalInfo(uploadedFile!, selectedTemplate);
       
       setProcessingStage('ai-analysis');
       setProcessingProgress(60);
@@ -439,10 +509,17 @@ const Index = () => {
         description: "Failed to generate clinical note. Please try again.",
         variant: "destructive",
       });
-      setProcessingDetails({
-        error: error.message || "Unknown error occurred",
-        metadata: { fileName: uploadedFile.name, fileSize: uploadedFile.size }
-      });
+        setProcessingDetails({
+          error: error.message || "Unknown error occurred",
+          metadata: isDualMode && uploadedFiles 
+            ? { 
+                ccdName: uploadedFiles.ccd.name, 
+                ccdSize: uploadedFiles.ccd.size,
+                dischargeName: uploadedFiles.discharge.name,
+                dischargeSize: uploadedFiles.discharge.size
+              }
+            : { fileName: uploadedFile?.name, fileSize: uploadedFile?.size }
+        });
     } finally {
       setIsGenerating(false);
       setProcessingStage('');
@@ -505,8 +582,37 @@ const Index = () => {
         {/* Step Content */}
         {currentStep === 0.5 && (
           <div className="space-y-6">
+            {/* Upload Mode Toggle */}
+            <Card className="glass-effect soft-shadow rounded-2xl">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label htmlFor="dual-mode" className="text-base font-medium">
+                      Dual Document Mode
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Upload both CCD and Discharge Summary for comprehensive analysis
+                    </p>
+                  </div>
+                  <Switch
+                    id="dual-mode"
+                    checked={isDualMode}
+                    onCheckedChange={(checked) => {
+                      setIsDualMode(checked);
+                      // Reset uploaded files when switching modes
+                      setUploadedFile(null);
+                      setUploadedFiles(null);
+                      setFileValidation(null);
+                    }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+            
             <FileUpload 
-              onFileUpload={handleFileUpload}
+              onFileUpload={!isDualMode ? handleFileUpload : undefined}
+              onDualFileUpload={isDualMode ? handleDualFileUpload : undefined}
+              isDualMode={isDualMode}
               forceOCR={forceOCR}
               onForceOCRChange={setForceOCR}
             />
@@ -552,11 +658,11 @@ const Index = () => {
           </div>
         )}
 
-        {currentStep === 1 && uploadedFile && (
+        {currentStep === 1 && (uploadedFile || uploadedFiles) && (
           <div className="space-y-6">
             <TemplateSelector 
               onTemplateSelect={handleTemplateSelect}
-              uploadedFile={uploadedFile}
+              uploadedFile={uploadedFile || (uploadedFiles ? uploadedFiles.ccd : null)}
             />
             
             {/* File validation results */}
@@ -565,42 +671,77 @@ const Index = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Settings className="w-5 h-5" />
-                    File Analysis
+                    {isDualMode ? "Dual Document Analysis" : "File Analysis"}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      {fileValidation.supportedType ? (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <AlertCircle className="w-4 h-4 text-red-600" />
-                      )}
-                      <span className="text-sm">
-                        File type: {fileValidation.fileType} ({fileValidation.supportedType ? 'Supported' : 'Not supported'})
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {fileValidation.sizeValid ? (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <AlertCircle className="w-4 h-4 text-red-600" />
-                      )}
-                      <span className="text-sm">
-                        File size: {fileValidation.fileSize} ({fileValidation.sizeValid ? 'Valid' : 'Too large'})
-                      </span>
-                    </div>
-                    {fileValidation.recommendations.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="font-semibold text-sm mb-2">Recommendations:</h4>
-                        <ul className="text-xs text-gray-600 space-y-1">
-                          {fileValidation.recommendations.map((rec: string, idx: number) => (
-                            <li key={idx}>• {rec}</li>
-                          ))}
-                        </ul>
+                  {isDualMode && fileValidation.bothValid ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm p-4 bg-blue-50 rounded-lg">
+                        <div className="col-span-2">
+                          <strong className="text-blue-900">CCD Document:</strong>
+                        </div>
+                        <div><strong>File:</strong> {fileValidation.ccd.fileName}</div>
+                        <div><strong>Size:</strong> {fileValidation.ccd.fileSizeFormatted}</div>
+                        <div><strong>Type:</strong> {fileValidation.ccd.fileType}</div>
+                        <div className="flex items-center gap-2">
+                          <strong>Supported:</strong> 
+                          <Badge variant="secondary" className="text-green-700 bg-green-50">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Yes
+                          </Badge>
+                        </div>
                       </div>
-                    )}
-                  </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm p-4 bg-green-50 rounded-lg">
+                        <div className="col-span-2">
+                          <strong className="text-green-900">Discharge Summary:</strong>
+                        </div>
+                        <div><strong>File:</strong> {fileValidation.discharge.fileName}</div>
+                        <div><strong>Size:</strong> {fileValidation.discharge.fileSizeFormatted}</div>
+                        <div><strong>Type:</strong> {fileValidation.discharge.fileType}</div>
+                        <div className="flex items-center gap-2">
+                          <strong>Supported:</strong> 
+                          <Badge variant="secondary" className="text-green-700 bg-green-50">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Yes
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        {fileValidation.supportedType ? (
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-red-600" />
+                        )}
+                        <span className="text-sm">
+                          File type: {fileValidation.fileType} ({fileValidation.supportedType ? 'Supported' : 'Not supported'})
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {fileValidation.sizeValid ? (
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-red-600" />
+                        )}
+                        <span className="text-sm">
+                          File size: {fileValidation.fileSize} ({fileValidation.sizeValid ? 'Valid' : 'Too large'})
+                        </span>
+                      </div>
+                      {fileValidation.recommendations?.length > 0 && (
+                        <div className="mt-4">
+                          <h4 className="font-semibold text-sm mb-2">Recommendations:</h4>
+                          <ul className="text-xs text-gray-600 space-y-1">
+                            {fileValidation.recommendations.map((rec: string, idx: number) => (
+                              <li key={idx}>• {rec}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
