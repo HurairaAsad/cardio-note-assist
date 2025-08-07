@@ -463,14 +463,14 @@ export class DocumentProcessor {
     const fileType = file.type || 'Unknown';
     const extension = fileName.toLowerCase().split('.').pop() || 'unknown';
     
-    const supportedTypes = ['pdf', 'txt', 'md', 'rtf'];
+    const supportedTypes = ['pdf', 'txt', 'md', 'rtf', 'xml'];
     const supportedType = supportedTypes.includes(extension);
     const sizeValid = file.size <= 50 * 1024 * 1024; // 50MB
     
     const recommendations: string[] = [];
     
     if (!supportedType) {
-      recommendations.push(`Convert file to supported format: ${supportedTypes.join(', ')}`);
+      recommendations.push(`Convert file to supported format: ${supportedTypes.join(', ').toUpperCase()}`);
     }
     
     if (!sizeValid) {
