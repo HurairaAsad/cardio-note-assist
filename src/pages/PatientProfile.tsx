@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { DashboardSidebar } from '@/components/DashboardSidebar';
 import { DashboardHeader } from '@/components/DashboardHeader';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { EncountersList } from '@/components/EncountersList';
 import { 
   FileText, 
   Calendar, 
@@ -192,7 +193,7 @@ export default function PatientProfile() {
   };
 
   const handleNewEncounter = () => {
-    navigate(`/patients/${patientId}/encounter`);
+    navigate(`/patients/${patientId}/encounters/new`);
   };
 
   if (authLoading || loading) {
@@ -316,7 +317,7 @@ export default function PatientProfile() {
                 </TabsTrigger>
                 <TabsTrigger value="encounters" className="gap-2">
                   <CalendarDays className="h-4 w-4" />
-                  Documents
+                  Encounters
                 </TabsTrigger>
                 <TabsTrigger value="billing" className="gap-2">
                   <CreditCard className="h-4 w-4" />
@@ -519,17 +520,7 @@ export default function PatientProfile() {
               </TabsContent>
 
               <TabsContent value="encounters">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Documents & Encounters</CardTitle>
-                    <CardDescription>
-                      View and manage patient encounter documents and notes
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">Document management interface coming soon...</p>
-                  </CardContent>
-                </Card>
+                <EncountersList patientId={patient.id} />
               </TabsContent>
 
               <TabsContent value="billing">
