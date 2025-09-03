@@ -10,6 +10,9 @@ import Dashboard from "./pages/Dashboard";
 import Report from "./pages/Report";
 import Billing from "./pages/Billing";
 import Analytics from "./pages/Analytics";
+import Patients from "./pages/Patients";
+import PatientProfile from "./pages/PatientProfile";
+import NewPatient from "./pages/NewPatient";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +31,9 @@ const App = () => (
             <Route path="/report/:id" element={<Report />} />
             <Route path="/billing" element={<Billing />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route path="/patients" element={<Patients />} />
+            <Route path="/patients/new" element={<NewPatient />} />
+            <Route path="/patients/:patientId" element={<PatientProfile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

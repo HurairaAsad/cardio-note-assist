@@ -7,13 +7,422 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
   }
   public: {
     Tables: {
+      patient_care_team: {
+        Row: {
+          contact_info: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          patient_id: string
+          provider_name: string | null
+          provider_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contact_info?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          patient_id: string
+          provider_name?: string | null
+          provider_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contact_info?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          patient_id?: string
+          provider_name?: string | null
+          provider_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_care_team_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_diagnoses: {
+        Row: {
+          category: string | null
+          created_at: string
+          diagnosed_date: string | null
+          diagnosis_name: string
+          icd_code: string
+          id: string
+          is_active: boolean | null
+          patient_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          diagnosed_date?: string | null
+          diagnosis_name: string
+          icd_code: string
+          id?: string
+          is_active?: boolean | null
+          patient_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          diagnosed_date?: string | null
+          diagnosis_name?: string
+          icd_code?: string
+          id?: string
+          is_active?: boolean | null
+          patient_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_diagnoses_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_encounters: {
+        Row: {
+          cpt_code: string | null
+          created_at: string
+          encounter_date: string
+          encounter_type: string | null
+          facility: string | null
+          id: string
+          notes: string | null
+          patient_id: string
+          provider: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cpt_code?: string | null
+          created_at?: string
+          encounter_date?: string
+          encounter_type?: string | null
+          facility?: string | null
+          id?: string
+          notes?: string | null
+          patient_id: string
+          provider?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cpt_code?: string | null
+          created_at?: string
+          encounter_date?: string
+          encounter_type?: string | null
+          facility?: string | null
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          provider?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_encounters_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_family_history: {
+        Row: {
+          condition_name: string
+          created_at: string
+          id: string
+          notes: string | null
+          patient_id: string
+          relative: string
+          relative_age: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          condition_name: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          patient_id: string
+          relative: string
+          relative_age?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          condition_name?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          relative?: string
+          relative_age?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_family_history_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_medications: {
+        Row: {
+          category: string | null
+          created_at: string
+          dosage: string | null
+          frequency: string | null
+          id: string
+          is_active: boolean | null
+          medication_name: string
+          patient_id: string
+          started_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          dosage?: string | null
+          frequency?: string | null
+          id?: string
+          is_active?: boolean | null
+          medication_name: string
+          patient_id: string
+          started_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          dosage?: string | null
+          frequency?: string | null
+          id?: string
+          is_active?: boolean | null
+          medication_name?: string
+          patient_id?: string
+          started_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_medications_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_procedures: {
+        Row: {
+          created_at: string
+          facility: string | null
+          id: string
+          notes: string | null
+          patient_id: string
+          procedure_date: string | null
+          procedure_name: string
+          provider: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          facility?: string | null
+          id?: string
+          notes?: string | null
+          patient_id: string
+          procedure_date?: string | null
+          procedure_name: string
+          provider?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          facility?: string | null
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          procedure_date?: string | null
+          procedure_name?: string
+          provider?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_procedures_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_social_history: {
+        Row: {
+          alcohol_use: string | null
+          created_at: string
+          drug_use: string | null
+          id: string
+          notes: string | null
+          patient_id: string
+          tobacco_use: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alcohol_use?: string | null
+          created_at?: string
+          drug_use?: string | null
+          id?: string
+          notes?: string | null
+          patient_id: string
+          tobacco_use?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alcohol_use?: string | null
+          created_at?: string
+          drug_use?: string | null
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          tobacco_use?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_social_history_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_vitals: {
+        Row: {
+          created_at: string
+          id: string
+          measurement_date: string
+          patient_id: string
+          updated_at: string
+          user_id: string
+          values: Json | null
+          vital_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          measurement_date?: string
+          patient_id: string
+          updated_at?: string
+          user_id: string
+          values?: Json | null
+          vital_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          measurement_date?: string
+          patient_id?: string
+          updated_at?: string
+          user_id?: string
+          values?: Json | null
+          vital_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_vitals_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patients: {
+        Row: {
+          created_at: string
+          date_of_birth: string | null
+          facility: string | null
+          first_name: string
+          id: string
+          last_name: string
+          mr_source: string | null
+          prn_mrn: string | null
+          provider: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_of_birth?: string | null
+          facility?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          mr_source?: string | null
+          prn_mrn?: string | null
+          provider?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_of_birth?: string | null
+          facility?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          mr_source?: string | null
+          prn_mrn?: string | null
+          provider?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

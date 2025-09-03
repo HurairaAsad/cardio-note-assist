@@ -27,6 +27,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 const navigation = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Patients", url: "/patients", icon: User },
   { title: "Reports", url: "/reports", icon: FileText },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Settings", url: "/settings", icon: Settings },
