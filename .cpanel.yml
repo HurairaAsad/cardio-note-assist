@@ -1,7 +1,7 @@
 ---
 deployment:
   tasks:
-    - export APP_DIR="$HOME/repos/cardio-note-assist"
+    - export APP_DIR="$HOME/app"
     - export WEBROOT="$HOME/public_html"
     - /opt/cpanel/ea-nodejs20/bin/npm ci --prefix "$APP_DIR"
     - /opt/cpanel/ea-nodejs20/bin/npm run build --prefix "$APP_DIR"
