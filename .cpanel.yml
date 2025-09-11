@@ -1,0 +1,9 @@
+---
+deployment:
+  tasks:
+    - export APP_DIR="$HOME/repos/cardio-note-assist"
+    - export WEBROOT="$HOME/public_html"
+    - /opt/cpanel/ea-nodejs20/bin/npm ci --prefix "$APP_DIR"
+    - /opt/cpanel/ea-nodejs20/bin/npm run build --prefix "$APP_DIR"
+    - /bin/rm -rf "${WEBROOT:?}/"*
+    - /bin/rsync -a --delete "$APP_DIR/dist/" "$WEBROOT/"
