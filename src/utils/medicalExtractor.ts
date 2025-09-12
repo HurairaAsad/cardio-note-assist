@@ -1,5 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { DocumentProcessor, DocumentProcessingResult } from './documentProcessor';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface MedicalExtractionResult {
   success: boolean;
@@ -242,14 +242,9 @@ SYNTHESIS INSTRUCTIONS:
 Generate a comprehensive clinical note that intelligently combines information from both documents, following standard medical note formatting.`;
 
 export class MedicalRecordExtractor {
-  private anthropic: Anthropic;
   private documentProcessor: DocumentProcessor;
 
-  constructor(apiKey: string) {
-    this.anthropic = new Anthropic({
-      apiKey,
-      dangerouslyAllowBrowser: true
-    });
+  constructor() {
     this.documentProcessor = new DocumentProcessor();
   }
 
@@ -430,22 +425,25 @@ export class MedicalRecordExtractor {
         .replace('{discharge_text}', truncatedDischargeText)
         .replace('{signoff_info}', signoffInfo);
 
-      const response = await this.anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 8000,
-        temperature: 0.1,
-        system: "You are an expert physician specializing in medical information synthesis. You excel at combining information from multiple medical documents to create comprehensive, accurate clinical notes. Use advanced medical reasoning to reconcile conflicts, merge medication lists, and integrate historical with recent data while maintaining clinical accuracy and professional formatting.",
-        messages: [
-          {
-            role: "user",
-            content: prompt
-          }
-        ]
+      const { data, error } = await supabase.functions.invoke('extract-medical-info', {
+        body: {
+          ccdText: truncatedCcdText,
+          dischargeText: truncatedDischargeText,
+          templateType,
+          userProfile,
+          extractionType: 'dual'
+        }
       });
 
-      const extractedNote = response.content[0]?.type === 'text' 
-        ? response.content[0].text 
-        : '';
+      if (error) {
+        throw new Error(`Edge function error: ${error.message}`);
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to extract medical information');
+      }
+
+      const extractedNote = data.extractedNote;
 
       if (!extractedNote) {
         return {
@@ -525,22 +523,24 @@ export class MedicalRecordExtractor {
         ? CARDIOLOGY_SPECIFIC_PROMPT.replace('{document_text}', truncatedText).replace('{signoff_info}', signoffInfo)
         : COMPREHENSIVE_MEDICAL_EXTRACTION_PROMPT.replace('{document_text}', truncatedText).replace('{signoff_info}', signoffInfo);
 
-      const response = await this.anthropic.messages.create({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 8000,
-        temperature: 0.1,
-        system: "You are an experienced physician and medical information specialist with advanced medical reasoning capabilities. Create comprehensive, accurate medical documentation based on provided source material. Use superior clinical knowledge to interpret complex medical data, correct OCR errors, and fill knowledge gaps. Maintain strict medical accuracy while organizing information clearly and professionally.",
-        messages: [
-          {
-            role: "user",
-            content: prompt
-          }
-        ]
+      const { data, error } = await supabase.functions.invoke('extract-medical-info', {
+        body: {
+          documentText: truncatedText,
+          templateType,
+          userProfile,
+          extractionType: 'single'
+        }
       });
 
-      const extractedNote = response.content[0]?.type === 'text' 
-        ? response.content[0].text 
-        : '';
+      if (error) {
+        throw new Error(`Edge function error: ${error.message}`);
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to extract medical information');
+      }
+
+      const extractedNote = data.extractedNote;
 
       if (!extractedNote) {
         return {
@@ -612,18 +612,23 @@ INSTRUCTIONS:
 
 Please generate the final clinical note now:`;
 
-      const response = await this.anthropic.messages.create({
-        model: 'claude-opus-4-20250514',
-        max_tokens: 8000,
-        temperature: 0.1,
-        system: "You are an expert physician with superior clinical reasoning and documentation skills. Generate comprehensive, professional medical notes by intelligently combining extracted data with clinical assessments. Ensure perfect medical accuracy, proper formatting, and clinical coherence.",
-        messages: [{
-          role: 'user',
-          content: finalPrompt
-        }]
+      const { data, error } = await supabase.functions.invoke('extract-medical-info', {
+        body: {
+          documentText: finalPrompt,
+          templateType: template,
+          extractionType: 'single'
+        }
       });
 
-      return response.content[0].type === 'text' ? response.content[0].text : '';
+      if (error) {
+        throw new Error(`Edge function error: ${error.message}`);
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to generate final note');
+      }
+
+      return data.extractedNote;
     } catch (error) {
       console.error('Final note generation error:', error);
       throw new Error(`Failed to generate final note: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -727,24 +732,27 @@ Please generate the final clinical note now:`;
 
       console.log('🚀 Making API call to Claude...');
       console.log('📄 Final prompt length:', finalPrompt.length);
-      console.log('🔑 API key available:', !!this.anthropic);
       
-      const response = await this.anthropic.messages.create({
-        model: 'claude-opus-4-20250514',
-        max_tokens: 8000,
-        temperature: 0.1,
-        system: "You are an expert physician with superior clinical reasoning and documentation skills. Generate comprehensive, professional medical notes by intelligently combining extracted data with clinical assessments. Ensure perfect medical accuracy, proper formatting, and clinical coherence.",
-        messages: [{
-          role: 'user',
-          content: finalPrompt
-        }]
+      const { data, error } = await supabase.functions.invoke('extract-medical-info', {
+        body: {
+          documentText: finalPrompt,
+          templateType: template,
+          extractionType: 'single'
+        }
       });
 
+      if (error) {
+        throw new Error(`Edge function error: ${error.message}`);
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to generate final note');
+      }
+
       console.log('✅ Claude API response received');
-      console.log('📝 Response type:', response.content[0]?.type);
-      console.log('📏 Response length:', response.content[0]?.type === 'text' ? response.content[0].text.length : 'Not text');
+      console.log('📏 Response length:', data.extractedNote.length);
       
-      const result = response.content[0].type === 'text' ? response.content[0].text : '';
+      const result = data.extractedNote;
       console.log('🎯 Final result preview:', result.substring(0, 200));
       
       return result;

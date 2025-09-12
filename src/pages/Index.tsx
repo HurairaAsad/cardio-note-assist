@@ -182,13 +182,11 @@ const Index = () => {
     }
   }, [extractedData, reviewOfSystemsData, physicalExamData, visitsData]);
 
-  const CLAUDE_API_KEY = "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";
-
   const handleFileUpload = async (file: File) => {
     setUploadedFile(file);
     
     // Initialize the extractor and validate the file
-    const extractor = new MedicalRecordExtractor(CLAUDE_API_KEY);
+    const extractor = new MedicalRecordExtractor();
     
     try {
       // Get file diagnostics
@@ -222,7 +220,7 @@ const Index = () => {
   const handleDualFileUpload = async (files: DualDocumentFiles) => {
     setUploadedFiles(files);
     
-    const extractor = new MedicalRecordExtractor(CLAUDE_API_KEY);
+    const extractor = new MedicalRecordExtractor();
     
     try {
       // Validate both files
@@ -315,7 +313,7 @@ const Index = () => {
     
     try {
       console.log('⏳ Starting final note generation...');
-      const extractor = new MedicalRecordExtractor(CLAUDE_API_KEY);
+      const extractor = new MedicalRecordExtractor();
       
       // Generate final note combining analysis with current assessments
       console.log('🔄 Calling generateFinalNoteWithAllData...');
@@ -449,7 +447,7 @@ const Index = () => {
     setProcessingProgress(0);
     
     try {
-      const extractor = new MedicalRecordExtractor(CLAUDE_API_KEY);
+      const extractor = new MedicalRecordExtractor();
       
       // Update progress stages
       setProcessingStage('reading');
