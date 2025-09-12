@@ -1,7 +1,4 @@
 import { defineConfig } from 'vite'
-export default defineConfig({
-  base: './', // <= ADD/ensure this line
-})
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
