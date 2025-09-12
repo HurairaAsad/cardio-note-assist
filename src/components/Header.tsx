@@ -17,7 +17,7 @@ export const Header = () => {
               <Stethoscope className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">MedSummarize</h1>
+              <h1 className="text-xl font-bold">Do My Note</h1>
               <p className="text-sm text-muted-foreground">AI Clinical Notes</p>
             </div>
           </div>

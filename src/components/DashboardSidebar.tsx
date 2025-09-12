@@ -55,7 +55,7 @@ export function DashboardSidebar() {
           </div>
           {!collapsed && (
             <div>
-              <h2 className="text-sm font-semibold">MedSummarize</h2>
+              <h2 className="text-sm font-semibold">Do My Note</h2>
               <p className="text-xs text-muted-foreground">AI Clinical Notes</p>
             </div>
           )}
