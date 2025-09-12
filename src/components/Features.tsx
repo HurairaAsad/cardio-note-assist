@@ -50,7 +50,7 @@ export const Features = () => {
             Powerful Features for Healthcare Professionals
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Designed specifically for Nurse Practitioners working in cardiology and specialty medicine
+            Designed specifically for Healthcare Professionals working in cardiology and specialty medicine
           </p>
         </div>
 

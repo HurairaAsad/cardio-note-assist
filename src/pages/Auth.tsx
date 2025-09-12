@@ -66,7 +66,7 @@ export default function Auth() {
             <Stethoscope className="w-8 h-8 text-primary-foreground" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Do My Note</h1>
-          <p className="text-muted-foreground mt-2">AI-Powered Clinical Notes for Nurse Practitioners</p>
+          <p className="text-muted-foreground mt-2">AI-Powered Clinical Notes</p>
         </div>
 
         <Card className="border-2 shadow-xl">

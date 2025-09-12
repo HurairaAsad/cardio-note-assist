@@ -13,7 +13,6 @@ export const Hero = ({ onGetStarted }: HeroProps) => {
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold text-foreground mb-6 leading-tight animate-slide-up">
             AI-Powered Clinical Notes
-            <span className="block gradient-text">For Nurse Practitioners</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto animate-slide-up" style={{animationDelay: '0.2s'}}>
             Transform patient reports and encounter notes into structured, professional clinical documentation. 
