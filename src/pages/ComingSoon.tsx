@@ -48,7 +48,7 @@ export default function ComingSoon() {
                 <Stethoscope className="w-6 h-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">MedSummarize</h1>
+                <h1 className="text-xl font-bold">Domy Note</h1>
                 <p className="text-sm text-muted-foreground">AI Clinical Notes</p>
               </div>
             </div>
@@ -139,7 +139,7 @@ export default function ComingSoon() {
       <footer className="border-t bg-background/95 backdrop-blur">
         <div className="container mx-auto px-4 py-6">
           <div className="text-center text-sm text-muted-foreground">
-            <p>&copy; 2024 MedSummarize. All rights reserved.</p>
+            <p>&copy; 2024 Domy Note. All rights reserved.</p>
           </div>
         </div>
       </footer>
